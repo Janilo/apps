@@ -1,34 +1,45 @@
-// RiskJud — modelo de risco portado de backend/risk_model.py (paridade verificada).
-// Determinístico, roda no navegador. Sem servidor.
+// RiskJud — modelo de risco LGPD (client-side, determinístico).
+// v2: ANPD calibrada à realidade, probabilidades como input, camadas de custo
+// separadas (judicial / ANPD / total-incidente IBM), esperado vs pior-caso.
 
 const PORTE_BREACH_BASE = { mei: 0.12, pequena: 0.20, media: 0.30, grande: 0.40 };
 const DATA_TYPE_BREACH_MULT = { financeiro: 1.30, saude: 1.50, cartao: 1.40, pessoal: 1.00 };
 const MATURITY_REDUCTION = { basico: 1.00, intermediario: 0.50, avancado: 0.15 };
 const BREACH_SCENARIOS = { pequeno: 0.01, esperado: 0.05, grande: 0.15 };
 
-const SETOR_BREACH_MULT = { geral: 1, financeiro: 1, saude: 1, varejo: 1, tecnologia: 1, telecom: 1, seguradora: 1, educacao: 1 };
-const SETOR_P_SUE_MULT = { geral: 1, financeiro: 1, saude: 1, varejo: 1, tecnologia: 1, telecom: 1, seguradora: 1, educacao: 1 };
 const SETOR_DANO_MULT = { geral: 1, financeiro: 1.26, saude: 1, varejo: 1.55, tecnologia: 1, telecom: 1, seguradora: 1, educacao: 1 };
 
 const P_SUE_BREACH_BASE = { pessoal: 0.0002, financeiro: 0.0010, cartao: 0.0006, saude: 0.0016 };
 const PORTE_P_SUE_BREACH_MULT = { mei: 0.1, pequena: 0.5, media: 2.0, grande: 8.0 };
 const PORTE_VALOR_MULTIPLIERS = { mei: 0.6, pequena: 0.8, media: 1.0, grande: 1.35 };
 
+// ANPD (Art. 52 LGPD): teto 2% do faturamento Brasil, limite R$ 50M/infração.
 const ANPD_MULTA_MAX = 50_000_000;
 const ANPD_MULTA_PCT = 0.02;
-const ANPD_P_FINE = { basico: 0.35, intermediario: 0.20, avancado: 0.08 };
+// P(ANPD multar | vazamento) por maturidade — RECALIBRADA À REALIDADE.
+// A ANPD aplicou pouquíssimas multas até 2025; a probabilidade real por vazamento
+// é de fração de 1%, não dezenas de %. Default conservador e baixo; o usuário ajusta.
+const ANPD_P_FINE = { basico: 0.02, intermediario: 0.01, avancado: 0.005 };
 const ANPD_GRAVIDADE = { pessoal: 0.3, financeiro: 0.6, cartao: 0.5, saude: 0.8 };
 const FATOR_RESPONSABILIDADE_SOLIDARIA = 1.2;
 
+// IBM Cost of a Data Breach 2025 — custo TOTAL de incidente no Brasil (média de mercado,
+// inclui resposta/forense/perda de negócio/remediação). Métrica DIFERENTE da indenização
+// judicial; serve de referência, não se soma às camadas do modelo.
+const IBM_CODB = { saude: 11_430_000, financeiro: 8_920_000, seguradora: 8_920_000, _default: 7_190_000 };
+
 const r = (x, n = 2) => Math.round((x + Number.EPSILON) * 10 ** n) / 10 ** n;
-const get = (obj, k, def) => (obj[k] !== undefined ? obj[k] : def);
+const get = (o, k, d) => (o[k] !== undefined ? o[k] : d);
+const isNum = (v) => typeof v === "number" && !Number.isNaN(v);
 
 const DEFAULTS = {
   base_usuarios: 100000, dados_financeiros: false, dados_saude: false,
   dados_pessoais: false, dados_cartao: false, maturidade_seguranca: "basico",
-  investimento_incremental: 0, horizonte_anos: 3, reincidencia: false,
+  investimento_incremental: 0, horizonte_anos: 1, reincidencia: false,
   provas_concretas: false, porte_empresa: "media", setor: "geral",
   faturamento_brasil: 0,
+  // overrides de probabilidade (null = usar o default calculado)
+  p_breach_override: null, p_sue_override: null, p_multa_override: null,
 };
 
 function dataAttractiveness(q) {
@@ -39,179 +50,160 @@ function dataAttractiveness(q) {
   return m;
 }
 
-function pBreach(q) {
+// --- probabilidades-base (defaults), antes de override e investimento ---
+function pBreachBase(q) {
   const base = get(PORTE_BREACH_BASE, q.porte_empresa, 0.20);
-  const p = base * dataAttractiveness(q) * get(MATURITY_REDUCTION, q.maturidade_seguranca, 1.0);
-  return Math.min(p, 0.90);
+  return Math.min(base * dataAttractiveness(q) * get(MATURITY_REDUCTION, q.maturidade_seguranca, 1.0), 0.90);
+}
+
+function pSueBase(q) {
+  const tipos = [];
+  if (q.dados_financeiros) tipos.push("financeiro");
+  if (q.dados_saude) tipos.push("saude");
+  if (q.dados_cartao) tipos.push("cartao");
+  if (q.dados_pessoais) tipos.push("pessoal");
+  if (!tipos.length) return 0;
+  const base = Math.max(...tipos.map((t) => P_SUE_BREACH_BASE[t]));
+  const usersFactor = Math.min(q.base_usuarios / 50000, 3.0);
+  let p = base * get(PORTE_P_SUE_BREACH_MULT, q.porte_empresa, 1.0) * usersFactor;
+  if (q.reincidencia) p = Math.min(p * 2.0, 0.6);
+  return Math.min(p, 0.30);
+}
+
+function pMultaBase(q) {
+  let p = get(ANPD_P_FINE, q.maturidade_seguranca, 0.01);
+  if (q.reincidencia) p = Math.min(p * 1.5, 0.80);
+  return p;
 }
 
 function investmentEffectiveness(investimento, baseUsuarios) {
   const perUser = baseUsuarios > 0 ? investimento / baseUsuarios : 0;
-  if (perUser <= 0) return { reducao_probabilidade: 0.0, reducao_impacto: 0.0 };
-  if (perUser <= 1) return { reducao_probabilidade: 0.15, reducao_impacto: 0.10 };
-  if (perUser <= 3) return { reducao_probabilidade: 0.35, reducao_impacto: 0.25 };
-  if (perUser <= 10) return { reducao_probabilidade: 0.55, reducao_impacto: 0.40 };
-  return { reducao_probabilidade: 0.75, reducao_impacto: 0.60 };
-}
-
-function pSueMedia(q) {
-  const tipos = [];
-  if (q.dados_financeiros) tipos.push("financeiro");
-  if (q.dados_saude) tipos.push("saude");
-  if (q.dados_cartao) tipos.push("cartao");
-  if (q.dados_pessoais) tipos.push("pessoal");
-  if (tipos.length === 0) return 0.0;
-  const base = Math.max(...tipos.map((t) => P_SUE_BREACH_BASE[t]));
-  const porteMult = get(PORTE_P_SUE_BREACH_MULT, q.porte_empresa, 1.0);
-  const setorMult = get(SETOR_P_SUE_MULT, q.setor, 1.0);
-  const usersFactor = Math.min(q.base_usuarios / 50000, 3.0);
-  return Math.min(base * porteMult * setorMult * usersFactor, 0.30);
+  if (perUser <= 0) return { rp: 0.0, ri: 0.0 };
+  if (perUser <= 1) return { rp: 0.15, ri: 0.10 };
+  if (perUser <= 3) return { rp: 0.35, ri: 0.25 };
+  if (perUser <= 10) return { rp: 0.55, ri: 0.40 };
+  return { rp: 0.75, ri: 0.60 };
 }
 
 function expectedLawsuits(afetados) {
-  if (afetados <= 0) return 0.0;
+  if (afetados <= 0) return 0;
   return Math.min(1 + afetados / 2000, afetados * 0.05);
 }
 
-function ajustarTaxa(taxa, q) {
-  return q.provas_concretas ? Math.min(taxa * 1.2, 0.95) : taxa;
-}
-function ajustarValorPorte(v, q) {
-  return v * get(PORTE_VALOR_MULTIPLIERS, q.porte_empresa, 1.0);
-}
-function ajustarValorReincidencia(v, q) {
-  return q.reincidencia ? v * 1.2 : v;
-}
-function ajustarPSue(p, q) {
-  return q.reincidencia ? Math.min(p * 2.0, 0.6) : p;
-}
-
-function multaAnpd(q, pBreachVal) {
-  if (q.faturamento_brasil <= 0) return { multa_esperada: 0.0, multa_cenario_breach: 0.0 };
-  let pFine = get(ANPD_P_FINE, q.maturidade_seguranca, 0.20);
-  if (q.reincidencia) pFine = Math.min(pFine * 1.5, 0.80);
-  const maxFine = Math.min(q.faturamento_brasil * ANPD_MULTA_PCT, ANPD_MULTA_MAX);
+function gravidadeMax(q) {
   const tipos = [];
   if (q.dados_saude) tipos.push("saude");
   if (q.dados_financeiros) tipos.push("financeiro");
   if (q.dados_cartao) tipos.push("cartao");
   if (q.dados_pessoais) tipos.push("pessoal");
-  const gravidade = tipos.length ? Math.max(...tipos.map((t) => get(ANPD_GRAVIDADE, t, 0.3))) : 0.3;
-  const multaCenario = maxFine * gravidade;
-  return { multa_esperada: pFine * pBreachVal * multaCenario, multa_cenario_breach: multaCenario };
+  return tipos.length ? Math.max(...tipos.map((t) => get(ANPD_GRAVIDADE, t, 0.3))) : 0.3;
 }
 
-function calcularCenario(q, benchmark, comInvestimento) {
-  let p_breach = pBreach(q);
-  const atratividade = dataAttractiveness(q);
-  let p_sue = ajustarPSue(pSueMedia(q), q);
-  p_breach *= get(SETOR_BREACH_MULT, q.setor, 1.0);
+// Núcleo: dada uma prob de vazamento (já com override/investimento), e as probs
+// efetivas de processo e multa, devolve os componentes de custo.
+function componentes(q, benchmark, pBreach, pSue, pMulta, impactoReduction) {
+  // valor médio por processo (porte, reincidência, setor)
+  let valor = get(benchmark, "valor_medio_causa", 15000.0);
+  valor *= get(PORTE_VALOR_MULTIPLIERS, q.porte_empresa, 1.0);
+  if (q.reincidencia) valor *= 1.2;
+  valor *= get(SETOR_DANO_MULT, q.setor, 1.0);
+  let taxa = get(benchmark, "taxa_procedencia", 0.65);
+  if (q.provas_concretas) taxa = Math.min(taxa * 1.2, 0.95);
 
-  let valor_medio = get(benchmark, "valor_medio_causa", 15000.0);
-  let taxa = ajustarTaxa(get(benchmark, "taxa_procedencia", 0.65), q);
-  valor_medio = ajustarValorReincidencia(ajustarValorPorte(valor_medio, q), q);
-  valor_medio *= get(SETOR_DANO_MULT, q.setor, 1.0);
+  let affected = Math.min(BREACH_SCENARIOS.esperado * dataAttractiveness(q), 0.5) * (1 - impactoReduction);
+  const usuariosAfetados = Math.floor(q.base_usuarios * affected);
+  const processos = pSue * expectedLawsuits(usuariosAfetados);
+  const custoProcesso = valor * taxa;
 
-  let impacto_reduction = 0.0;
-  if (comInvestimento && q.investimento_incremental > 0) {
-    const ef = investmentEffectiveness(q.investimento_incremental, q.base_usuarios);
-    p_breach *= 1 - ef.reducao_probabilidade;
-    impacto_reduction = ef.reducao_impacto;
-  }
+  // litígio
+  const litigioSeVazar = processos * custoProcesso * FATOR_RESPONSABILIDADE_SOLIDARIA;
+  const litigioEsperado = pBreach * litigioSeVazar;
 
-  let affected_pct = Math.min(BREACH_SCENARIOS.esperado * atratividade, 0.5);
-  affected_pct *= 1 - impacto_reduction;
-  const usuarios_afetados = Math.floor(q.base_usuarios * affected_pct);
+  // multa ANPD
+  const anpdSeMultar = q.faturamento_brasil > 0
+    ? Math.min(q.faturamento_brasil * ANPD_MULTA_PCT, ANPD_MULTA_MAX) * gravidadeMax(q)
+    : 0;
+  const anpdEsperado = pBreach * pMulta * anpdSeMultar;
 
-  const processos = p_sue * expectedLawsuits(usuarios_afetados);
-  const custo_processo = valor_medio * taxa;
-  const fator_rs = FATOR_RESPONSABILIDADE_SOLIDARIA;
-  const exposure_breach = processos * custo_processo * fator_rs;
-  const exposure_esperada = p_breach * exposure_breach;
-
-  const anpd = multaAnpd(q, p_breach);
-  const exposure_breach_total = exposure_breach + anpd.multa_cenario_breach;
-  const exposure_esperada_total = exposure_esperada + anpd.multa_esperada;
-
-  const perUser = q.base_usuarios > 0 ? exposure_breach_total / q.base_usuarios : 0;
-  let nivel = "Baixo";
-  if (perUser > 20) nivel = "Crítico";
-  else if (perUser > 5) nivel = "Alto";
-  else if (perUser > 1) nivel = "Médio";
+  // IBM total de incidente (referência)
+  const ibmPorIncidente = get(IBM_CODB, q.setor, IBM_CODB._default);
+  const ibmEsperado = pBreach * ibmPorIncidente;
 
   return {
-    probabilidade_breach_anual: r(p_breach, 4),
-    usuarios_afetados_estimados: usuarios_afetados,
-    p_sue_breach: r(p_sue, 4),
-    processos_esperados: r(processos, 1),
-    valor_medio_processo: r(valor_medio * atratividade * taxa, 2),
-    exposure_total_esperado: r(exposure_esperada, 2),
-    exposure_cenario_breach: r(exposure_breach, 2),
-    nivel_risco: nivel,
-    porte_multiplier: get(PORTE_VALOR_MULTIPLIERS, q.porte_empresa, 1.0),
-    setor_aplicado: q.setor,
-    setor_multiplier: r(get(SETOR_DANO_MULT, q.setor, 1.0), 2),
-    multa_anpd_esperada: r(anpd.multa_esperada, 2),
-    multa_anpd_cenario_breach: r(anpd.multa_cenario_breach, 2),
-    fator_responsabilidade_solidaria: r(fator_rs, 2),
-    exposure_total_com_anpd: r(exposure_esperada_total, 2),
-    exposure_breach_com_anpd: r(exposure_breach_total, 2),
-  };
-}
-
-function calcularResultado(q, c0, c1) {
-  const exposure_sem = c0.exposure_total_com_anpd * q.horizonte_anos;
-  const exposure_com = c1.exposure_total_com_anpd * q.horizonte_anos;
-  const economia = exposure_sem - exposure_com;
-  const investimento = q.investimento_incremental;
-
-  let roi = 0, payback = null;
-  if (investimento > 0 && economia > 0) {
-    roi = (economia - investimento) / investimento;
-    payback = investimento / (economia / q.horizonte_anos);
-  }
-
-  let recomendacao, nivel_confianca;
-  if (investimento === 0) {
-    recomendacao = "Informe um valor de investimento para análise comparativa.";
-    nivel_confianca = "Média";
-  } else if (roi > 3) {
-    recomendacao = "Investimento altamente recomendado. ROI > 300% com retorno esperado superando amplamente o custo.";
-    nivel_confianca = "Alta";
-  } else if (roi > 1) {
-    recomendacao = "Investimento recomendado. Retorno esperado supera o custo em mais de 2x.";
-    nivel_confianca = "Alta";
-  } else if (roi > 0) {
-    recomendacao = "Investimento vale a pena, mas com retorno moderado. Avalie outros fatores qualitativos.";
-    nivel_confianca = "Média";
-  } else if (economia > 0) {
-    recomendacao = "Investimento reduz exposição, mas ROI é baixo. Considere soluções mais custo-efetivas.";
-    nivel_confianca = "Média";
-  } else {
-    recomendacao = "Investimento não se justifica pelo risco jurídico atual. Reveja o montante ou priorize outras áreas.";
-    nivel_confianca = "Baixa";
-  }
-
-  return {
-    investimento,
-    exposure_sem_investimento: r(exposure_sem, 2),
-    exposure_com_investimento: r(exposure_com, 2),
-    economia_esperada: r(economia, 2),
-    roi_esperado: r(roi * 100, 1),
-    payback_anos: payback !== null ? r(payback, 1) : null,
-    recomendacao,
-    nivel_confianca,
+    usuariosAfetados, processos,
+    litigioSeVazar, litigioEsperado,
+    anpdSeMultar, anpdEsperado,
+    ibmPorIncidente, ibmEsperado,
   };
 }
 
 export function analisar(params, data) {
   const q = { ...DEFAULTS, ...params };
-  const benchmark = data.benchmark;
-  const cenario_atual = calcularCenario(q, benchmark, false);
-  let cenario_pos = null, resultado = null;
+  const bench = data.benchmark;
+
+  // probabilidades efetivas (override > default)
+  const pBreach0 = isNum(q.p_breach_override) ? q.p_breach_override : pBreachBase(q);
+  const pSue = isNum(q.p_sue_override) ? q.p_sue_override : pSueBase(q);
+  const pMulta = isNum(q.p_multa_override) ? q.p_multa_override : pMultaBase(q);
+
+  const sem = componentes(q, bench, pBreach0, pSue, pMulta, 0);
+  const totalEsperado = sem.litigioEsperado + sem.anpdEsperado;
+  const piorCaso = sem.litigioSeVazar + sem.anpdSeMultar; // se vazar E a ANPD multar
+
+  // investimento: reduz p_breach e o impacto
+  let investimento = null;
   if (q.investimento_incremental > 0) {
-    cenario_pos = calcularCenario(q, benchmark, true);
-    resultado = calcularResultado(q, cenario_atual, cenario_pos);
+    const ef = investmentEffectiveness(q.investimento_incremental, q.base_usuarios);
+    const pBreachCom = pBreach0 * (1 - ef.rp);
+    const comp_com = componentes(q, bench, pBreachCom, pSue, pMulta, ef.ri);
+    const totalCom = comp_com.litigioEsperado + comp_com.anpdEsperado;
+    const economia = (totalEsperado - totalCom) * q.horizonte_anos;
+    const inv = q.investimento_incremental;
+    let roi = 0, payback = null;
+    if (inv > 0 && economia > 0) { roi = (economia - inv) / inv; payback = inv / (economia / q.horizonte_anos); }
+    let rec, conf;
+    if (roi > 3) { rec = "Investimento altamente recomendado pelo risco jurídico/administrativo modelado."; conf = "Alta"; }
+    else if (roi > 1) { rec = "Investimento recomendado: retorno supera o custo em mais de 2x."; conf = "Alta"; }
+    else if (roi > 0) { rec = "Retorno positivo, mas moderado. Pese fatores fora deste modelo."; conf = "Média"; }
+    else if (economia > 0) { rec = "Reduz exposição, mas o ROI pelo risco jurídico é baixo. O caso de investir costuma estar no custo total de incidente, não nas indenizações."; conf = "Média"; }
+    else { rec = "Não se justifica pelo risco jurídico/administrativo isolado. Avalie pelo custo total de incidente."; conf = "Baixa"; }
+    investimento = {
+      investimento: inv,
+      exposicao_sem: r(totalEsperado * q.horizonte_anos),
+      exposicao_com: r(totalCom * q.horizonte_anos),
+      economia: r(economia),
+      roi: r(roi * 100, 1),
+      payback_anos: payback !== null ? r(payback, 1) : null,
+      recomendacao: rec, confianca: conf,
+    };
   }
-  return { parametros: q, benchmark, cenario_atual, cenario_pos_investimento: cenario_pos, resultado_investimento: resultado };
+
+  // sensibilidade do total à P(multa ANPD)
+  const grid = [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20];
+  const sensibilidade = grid.map((p) => ({
+    p,
+    total: r(sem.litigioEsperado + pBreach0 * p * sem.anpdSeMultar),
+  }));
+
+  return {
+    parametros: q,
+    prob: { p_breach: r(pBreach0, 4), p_sue: r(pSue, 5), p_multa: r(pMulta, 4) },
+    esperado: {
+      litigio: r(sem.litigioEsperado),
+      anpd: r(sem.anpdEsperado),
+      total: r(totalEsperado),
+      processos: r(sem.processos, 1),
+    },
+    pior_caso: {
+      litigio_se_vazar: r(sem.litigioSeVazar),
+      anpd_se_multar: r(sem.anpdSeMultar),
+      total: r(piorCaso),
+    },
+    ibm: {
+      por_incidente: sem.ibmPorIncidente,
+      esperado: r(sem.ibmEsperado),
+    },
+    investimento,
+    sensibilidade,
+  };
 }

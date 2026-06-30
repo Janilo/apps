@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>RiskJud · Precificação de risco LGPD</title>
-<meta name="description" content="Quanto custa um vazamento de dados no Brasil? Modelo de risco LGPD calibrado contra 4.878 processos reais do DataJud e 1.968 acórdãos." />
+<meta name="description" content="Exposição judicial e administrativa de risco LGPD no Brasil, sob premissas que você controla. Calibrado contra 4.878 processos do DataJud e 1.968 acórdãos." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
@@ -21,7 +21,7 @@
   header.site { display:flex; align-items:baseline; gap:.6rem; margin-bottom:.25rem; }
   header.site .mark { font-family:'Fraunces',serif; font-weight:600; font-size:1.6rem; color:var(--marine); letter-spacing:-.01em; }
   header.site .dot { color:var(--gold); }
-  .tagline { color:var(--muted); font-size:.95rem; margin:0 0 1.25rem; }
+  .tagline { color:var(--muted); font-size:.95rem; margin:0 0 1.25rem; max-width:64ch; }
   h2 { font-size:1.15rem; color:var(--marine); font-weight:600; letter-spacing:-.01em; margin:2rem 0 .75rem; }
   .disclaimer { background:#FBF6E6; border:1px solid var(--gold); border-radius:6px; padding:.85rem 1rem; font-size:.84rem; color:#5b4d18; margin-bottom:1.5rem; }
   .disclaimer b { color:#3f360f; }
@@ -29,26 +29,32 @@
   @media (max-width:820px){ .grid { grid-template-columns:1fr; } }
   .card { background:var(--white); border:1px solid var(--stone); border-radius:8px; padding:1.1rem 1.2rem; box-shadow:0 1px 0 rgba(31,31,31,.03),0 2px 10px rgba(31,31,31,.04); margin-bottom:1.1rem; }
   .card h3 { margin:0 0 .9rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.16em; color:var(--muted); font-weight:600; }
+  .card h3 .reset { float:right; font-size:.7rem; letter-spacing:0; text-transform:none; color:var(--green); cursor:pointer; font-weight:500; }
   label { display:block; font-size:.8rem; font-weight:500; margin:.7rem 0 .25rem; color:var(--ink); }
   label:first-of-type { margin-top:0; }
   input[type=number], select { width:100%; padding:.5rem .6rem; border:1px solid var(--stone); border-radius:5px; font-size:.9rem; background:var(--offwhite); color:var(--ink); }
-  input[type=range]{ width:100%; accent-color:var(--marine); }
   .checks { display:grid; grid-template-columns:1fr 1fr; gap:.3rem .5rem; margin-top:.3rem; }
   .checks label { display:flex; align-items:center; gap:.4rem; font-weight:400; font-size:.83rem; margin:.15rem 0; cursor:pointer; }
   .checks input { accent-color:var(--marine); }
-  .hint { font-size:.72rem; color:var(--muted); margin-top:.15rem; }
+  .prob label { display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin:.55rem 0 .15rem; }
+  .prob .pct { width:90px; flex:0 0 90px; text-align:right; }
+  .hint { font-size:.72rem; color:var(--muted); margin:.1rem 0 .3rem; }
   .stat-row { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
   .stat { background:var(--offwhite); border:1px solid var(--stone); border-radius:6px; padding:.8rem .9rem; }
   .stat .k { font-size:.68rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); font-weight:600; }
   .stat .v { font-size:1.45rem; font-weight:600; color:var(--marine); margin-top:.15rem; letter-spacing:-.02em; }
-  .stat .v.big { font-size:1.8rem; }
+  .stat .v.big { font-size:1.9rem; }
+  .stat .v.tail { color:var(--purple); }
   .stat .sub { font-size:.74rem; color:var(--muted); margin-top:.1rem; }
-  .badge { display:inline-block; padding:.2rem .6rem; border-radius:999px; font-size:.78rem; font-weight:600; }
-  .b-Baixo{ background:#E3F0EA; color:var(--green);} .b-Médio{ background:#FBF6E6; color:#8a6d10;}
-  .b-Alto{ background:#F7E4D6; color:#9a4b16;} .b-Crítico{ background:#F8D7DA; color:var(--danger);}
-  .roi-card { border-left:4px solid var(--gold); }
+  .tail-card { border-left:4px solid var(--gold); }
+  .note { font-size:.78rem; color:var(--muted); margin:.6rem 0 0; }
+  .roi-card { border-left:4px solid var(--stone); }
   .roi-card.pos { border-left-color:var(--green); } .roi-card.neg { border-left-color:var(--danger); }
   .rec { font-size:.86rem; color:var(--ink); margin-top:.5rem; }
+  .exclude { background:var(--offwhite); border:1px dashed var(--stone); border-radius:6px; padding:.8rem 1rem; }
+  .exclude .k { font-size:.7rem; text-transform:uppercase; letter-spacing:.14em; color:var(--muted); font-weight:600; }
+  .exclude ul { margin:.5rem 0 0; padding-left:1.1rem; font-size:.82rem; color:var(--ink); columns:2; column-gap:1.5rem; }
+  @media (max-width:520px){ .exclude ul{ columns:1; } }
   .ctx-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:.8rem; margin-bottom:1rem; }
   @media (max-width:680px){ .ctx-stats{ grid-template-columns:1fr 1fr; } .stat-row{grid-template-columns:1fr;} }
   footer { margin-top:2.5rem; padding-top:1.25rem; border-top:1px solid var(--stone); font-size:.78rem; color:var(--muted); }
@@ -59,80 +65,124 @@
 <body>
 <div class="wrap">
   <header class="site"><span class="mark">RiskJud</span><span class="dot">●</span></header>
-  <p class="tagline">Quanto custa, em indenização e multa, um vazamento de dados no Brasil. Calibrado contra dados reais de tribunal.</p>
+  <p class="tagline">Exposição <b>judicial e administrativa</b> de um vazamento de dados no Brasil, sob premissas que você controla. Não é o custo total de um incidente.</p>
 
   <div class="disclaimer">
-    <b>Como ler:</b> estimativa, não aconselhamento jurídico. O <b>litígio</b> é calibrado contra ~813 ações de LGPD/ano no Brasil inteiro, então a exposição de uma empresa tende a ser pequena. A <b>multa da ANPD</b> é um teto teórico (Art. 52: até 2% do faturamento, limite R$ 50M); a fiscalização ainda é incipiente, leia como pior caso, não custo esperado.
+    <b>Como ler:</b> estimativa, não aconselhamento jurídico. Este modelo mede <b>indenização judicial + multa ANPD</b>, que costuma ser a menor parte do custo de um vazamento. O grosso (resposta, forense, downtime, churn, reputação) fica de fora, e aparece só como referência na camada IBM. A <b>multa ANPD</b> tem magnitude definida em lei (Art. 52), mas probabilidade historicamente baixa: ajuste a <b>P(multa)</b> nas premissas e veja o resultado se mover.
   </div>
 
   <div class="grid">
-    <div class="card" id="inputs">
-      <h3>Perfil da empresa</h3>
-      <label for="base">Base de usuários</label>
-      <input type="number" id="base" min="1000" max="100000000" step="10000" value="100000" />
+    <div>
+      <div class="card" id="inputs">
+        <h3>Perfil da empresa</h3>
+        <label for="base">Base de usuários</label>
+        <input type="number" id="base" min="1000" max="100000000" step="10000" value="100000" />
 
-      <label for="porte">Porte</label>
-      <select id="porte">
-        <option value="mei">MEI</option>
-        <option value="pequena">Pequena</option>
-        <option value="media" selected>Média</option>
-        <option value="grande">Grande</option>
-      </select>
+        <label for="porte">Porte</label>
+        <select id="porte">
+          <option value="mei">MEI</option>
+          <option value="pequena">Pequena</option>
+          <option value="media" selected>Média</option>
+          <option value="grande">Grande</option>
+        </select>
 
-      <label for="setor">Setor</label>
-      <select id="setor">
-        <option value="geral">Geral</option>
-        <option value="financeiro" selected>Financeiro [dados reais]</option>
-        <option value="varejo">Varejo [dados reais]</option>
-        <option value="saude">Saúde [est.]</option>
-        <option value="tecnologia">Tecnologia [est.]</option>
-        <option value="telecom">Telecom [est.]</option>
-        <option value="seguradora">Seguradora [est.]</option>
-        <option value="educacao">Educação [est.]</option>
-      </select>
+        <label for="setor">Setor</label>
+        <select id="setor">
+          <option value="geral">Geral</option>
+          <option value="financeiro" selected>Financeiro [dados reais]</option>
+          <option value="varejo">Varejo [dados reais]</option>
+          <option value="saude">Saúde [est.]</option>
+          <option value="tecnologia">Tecnologia [est.]</option>
+          <option value="telecom">Telecom [est.]</option>
+          <option value="seguradora">Seguradora [est.]</option>
+          <option value="educacao">Educação [est.]</option>
+        </select>
 
-      <label>Dados armazenados</label>
-      <div class="checks">
-        <label><input type="checkbox" id="d_pessoais" checked /> Pessoais</label>
-        <label><input type="checkbox" id="d_financeiros" checked /> Financeiros</label>
-        <label><input type="checkbox" id="d_cartao" /> Cartão</label>
-        <label><input type="checkbox" id="d_saude" /> Saúde</label>
+        <label>Dados armazenados</label>
+        <div class="checks">
+          <label><input type="checkbox" id="d_pessoais" checked /> Pessoais</label>
+          <label><input type="checkbox" id="d_financeiros" checked /> Financeiros</label>
+          <label><input type="checkbox" id="d_cartao" /> Cartão</label>
+          <label><input type="checkbox" id="d_saude" /> Saúde</label>
+        </div>
+
+        <label for="maturidade">Maturidade de segurança</label>
+        <select id="maturidade">
+          <option value="basico">Básico</option>
+          <option value="intermediario" selected>Intermediário</option>
+          <option value="avancado">Avançado</option>
+        </select>
+
+        <label for="faturamento">Faturamento anual no Brasil (R$) · multa ANPD</label>
+        <input type="number" id="faturamento" min="0" step="1000000" value="50000000" />
+
+        <label for="investimento">Investimento em segurança (R$)</label>
+        <input type="number" id="investimento" min="0" step="50000" value="200000" />
+
+        <label for="horizonte">Horizonte (anos)</label>
+        <input type="number" id="horizonte" min="1" max="10" step="1" value="1" />
+
+        <label>Fatores</label>
+        <div class="checks">
+          <label><input type="checkbox" id="reincidencia" /> Reincidente</label>
+          <label><input type="checkbox" id="provas" /> Provas concretas</label>
+        </div>
       </div>
 
-      <label for="maturidade">Maturidade de segurança</label>
-      <select id="maturidade">
-        <option value="basico">Básico</option>
-        <option value="intermediario" selected>Intermediário</option>
-        <option value="avancado">Avançado</option>
-      </select>
-
-      <label for="faturamento">Faturamento anual no Brasil (R$) · multa ANPD</label>
-      <input type="number" id="faturamento" min="0" step="1000000" value="50000000" />
-
-      <label for="investimento">Investimento em segurança (R$)</label>
-      <input type="number" id="investimento" min="0" step="50000" value="200000" />
-
-      <label for="horizonte">Horizonte (anos)</label>
-      <input type="number" id="horizonte" min="1" max="10" step="1" value="1" />
-
-      <label>Fatores</label>
-      <div class="checks">
-        <label><input type="checkbox" id="reincidencia" /> Reincidente</label>
-        <label><input type="checkbox" id="provas" /> Provas concretas</label>
+      <div class="card prob">
+        <h3>Premissas · probabilidades <span class="reset" id="reset_prob">↺ padrão</span></h3>
+        <p class="hint">Calculadas pelo perfil. Edite para testar suas próprias premissas.</p>
+        <label>P(vazamento por ano) <input class="pct" type="number" id="p_breach" min="0" max="100" step="0.5" /></label>
+        <label>P(processo, se vazar) <input class="pct" type="number" id="p_sue" min="0" max="100" step="0.1" /></label>
+        <label>P(multa ANPD, se vazar) <input class="pct" type="number" id="p_multa" min="0" max="100" step="0.5" /></label>
+        <p class="hint">A ANPD aplicou pouquíssimas multas até 2025. O default é baixo de propósito; suba se acha que a fiscalização vai apertar.</p>
       </div>
     </div>
 
     <div>
       <div class="card">
-        <h3>Exposição esperada por ano</h3>
+        <h3>Exposição esperada por ano · judicial + ANPD</h3>
         <div class="stat-row">
-          <div class="stat"><div class="k">Total (litígio + ANPD)</div><div class="v big" id="o_total">—</div><div class="sub" id="o_nivel"></div></div>
-          <div class="stat"><div class="k">Risco</div><div class="v" id="o_badge">—</div><div class="sub" id="o_perfil"></div></div>
+          <div class="stat"><div class="k">Total esperado</div><div class="v big" id="o_total">—</div><div class="sub" id="o_total_sub"></div></div>
+          <div class="stat"><div class="k">Indenização (litígio)</div><div class="v" id="o_litigio">—</div><div class="sub" id="o_proc"></div></div>
         </div>
         <div class="stat-row" style="margin-top:.8rem">
-          <div class="stat"><div class="k">Indenização (litígio)</div><div class="v" id="o_litigio">—</div><div class="sub" id="o_proc"></div></div>
-          <div class="stat"><div class="k">Multa ANPD (esperada)</div><div class="v" id="o_anpd">—</div><div class="sub" id="o_anpd_teto"></div></div>
+          <div class="stat"><div class="k">Multa ANPD (esperada)</div><div class="v" id="o_anpd">—</div><div class="sub" id="o_anpd_sub"></div></div>
+          <div class="stat"><div class="k">Por usuário/ano</div><div class="v" id="o_peruser">—</div><div class="sub">exposição esperada</div></div>
         </div>
+        <p class="note">Esperado = probabilidade × magnitude. Como as probabilidades são baixas, o número típico é pequeno. O que pesa é a cauda, ao lado.</p>
+      </div>
+
+      <div class="card tail-card">
+        <h3>Pior caso plausível · se vazar e a ANPD multar</h3>
+        <div class="stat-row">
+          <div class="stat"><div class="k">Exposição no pior caso</div><div class="v big tail" id="o_tail">—</div><div class="sub">num único incidente</div></div>
+          <div class="stat"><div class="k">Multa ANPD (cenário)</div><div class="v tail" id="o_tail_anpd">—</div><div class="sub" id="o_tail_anpd_sub"></div></div>
+        </div>
+        <p class="note">A magnitude da multa é definida em lei (Art. 52: até 2% do faturamento, teto R$ 50M), não pela probabilidade. É o número que um CFO provisiona como pior caso.</p>
+      </div>
+
+      <div class="card">
+        <h3>Custo total de incidente · referência IBM</h3>
+        <div class="stat-row">
+          <div class="stat"><div class="k">Por incidente (média de mercado)</div><div class="v" id="o_ibm">—</div><div class="sub" id="o_ibm_sub"></div></div>
+          <div class="stat"><div class="k">Esperado por ano</div><div class="v" id="o_ibm_esp">—</div><div class="sub">× P de vazamento</div></div>
+        </div>
+        <p class="note">IBM Cost of a Data Breach 2025. Métrica <b>diferente</b> das de cima: é o custo total do incidente (resposta, perda de negócio, remediação), não indenização judicial. Serve de referência, <b>não se soma</b>.</p>
+      </div>
+
+      <div class="exclude card">
+        <div class="k">O que este número NÃO inclui</div>
+        <ul>
+          <li>Resposta a incidente</li><li>Forense</li><li>Notificação</li><li>Downtime</li>
+          <li>Churn de clientes</li><li>Clawback de contratos B2B</li><li>Remediação</li><li>Reputação</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Sensibilidade à P(multa ANPD)</h3>
+        <div id="chartSens" style="height:240px"></div>
+        <p class="note">Pequenas mudanças na probabilidade de multa mexem o resultado inteiro. Por isso ela é uma premissa, não um fato.</p>
       </div>
 
       <div class="card roi-card" id="roiCard">
@@ -145,8 +195,8 @@
       </div>
 
       <div class="card">
-        <h3>Exposição: sem vs. com investimento</h3>
-        <div id="chart" style="height:280px"></div>
+        <h3>Exposição esperada · sem vs. com investimento</h3>
+        <div id="chart" style="height:240px"></div>
       </div>
     </div>
   </div>
@@ -166,7 +216,7 @@
 
   <footer>
     <p class="src">
-      <b>Fontes.</b> DataJud/CNJ (4.878 processos de proteção de dados, 34 tribunais, 2020–2025). Jurisprudência: JurisFonte + TJES (1.968 acórdãos, 675 com valor). Benchmark externo: IBM Cost of a Data Breach 2025 (Brasil R$ 7,19M, custo total de incidente, métrica distinta da indenização judicial). Multa ANPD: Art. 52 da LGPD. Modelo determinístico calibrado a 8,6% de erro contra o volume do DataJud. Coleta: jun/2026.
+      <b>Fontes.</b> DataJud/CNJ (4.878 processos de proteção de dados, 34 tribunais, 2020–2025). Jurisprudência: JurisFonte + TJES (1.968 acórdãos, 675 com valor). Custo total de incidente: IBM Cost of a Data Breach 2025 (Brasil R$ 7,19M; Saúde 11,43M; Finanças 8,92M). Multa ANPD: Art. 52 da LGPD. Modelo determinístico; probabilidades de multa calibradas à fiscalização real (baixa) e ajustáveis. Coleta: jun/2026.
     </p>
     <p>Construído por <a href="https://pereirasaraiva.com">Janilo Saraiva</a>. Demonstração de método, não substitui análise jurídica.</p>
   </footer>
@@ -176,9 +226,12 @@
 import { analisar } from './model.mjs';
 
 const brl = (x) => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(x||0);
+const brl2 = (x) => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2}).format(x||0);
 const num = (x) => new Intl.NumberFormat('pt-BR').format(x||0);
+const fmtPct = (x) => parseFloat((x*100).toFixed(2)).toString();
 const $ = (id) => document.getElementById(id);
 let DATA = null;
+const overridden = { p_breach:false, p_sue:false, p_multa:false };
 
 function readParams(){
   return {
@@ -195,62 +248,88 @@ function readParams(){
     horizonte_anos: +$('horizonte').value || 1,
     reincidencia: $('reincidencia').checked,
     provas_concretas: $('provas').checked,
+    p_breach_override: overridden.p_breach ? (parseFloat($('p_breach').value)/100) : null,
+    p_sue_override: overridden.p_sue ? (parseFloat($('p_sue').value)/100) : null,
+    p_multa_override: overridden.p_multa ? (parseFloat($('p_multa').value)/100) : null,
   };
 }
 
 function render(){
   const p = readParams();
   const res = analisar(p, DATA);
-  const c = res.cenario_atual;
+  const e = res.esperado, t = res.pior_caso, ibm = res.ibm;
 
-  $('o_total').textContent = brl(c.exposure_total_com_anpd);
-  $('o_nivel').textContent = `por ano · base ${num(p.base_usuarios)} usuários`;
-  $('o_badge').innerHTML = `<span class="badge b-${c.nivel_risco}">${c.nivel_risco}</span>`;
-  $('o_perfil').textContent = `${p.porte_empresa} · ${p.setor}`;
-  $('o_litigio').textContent = brl(c.exposure_total_esperado);
-  $('o_proc').textContent = `${c.processos_esperados} ações esperadas se vazar`;
-  $('o_anpd').textContent = brl(c.multa_anpd_esperada);
-  $('o_anpd_teto').textContent = p.faturamento_brasil>0 ? `teto do cenário: ${brl(c.multa_anpd_cenario_breach)}` : 'informe faturamento';
+  // premissas: preenche campos não-editados com o default calculado
+  if(!overridden.p_breach) $('p_breach').value = fmtPct(res.prob.p_breach);
+  if(!overridden.p_sue) $('p_sue').value = fmtPct(res.prob.p_sue);
+  if(!overridden.p_multa) $('p_multa').value = fmtPct(res.prob.p_multa);
 
+  // esperado
+  $('o_total').textContent = brl(e.total);
+  $('o_total_sub').textContent = `por ano · com P(multa) ${fmtPct(res.prob.p_multa)}%`;
+  $('o_litigio').textContent = brl(e.litigio);
+  $('o_proc').textContent = `${e.processos} ações esperadas se vazar`;
+  $('o_anpd').textContent = brl(e.anpd);
+  $('o_anpd_sub').textContent = p.faturamento_brasil>0 ? 'prob. baixa × magnitude' : 'informe faturamento';
+  $('o_peruser').textContent = brl2(p.base_usuarios>0 ? e.total/p.base_usuarios : 0);
+
+  // pior caso
+  $('o_tail').textContent = brl(t.total);
+  $('o_tail_anpd').textContent = brl(t.anpd_se_multar);
+  $('o_tail_anpd_sub').textContent = p.faturamento_brasil>0 ? `${(t.anpd_se_multar/p.faturamento_brasil*100).toFixed(2)}% do faturamento` : 'informe faturamento';
+
+  // ibm
+  $('o_ibm').textContent = brl(ibm.por_incidente);
+  $('o_ibm_sub').textContent = `setor ${p.setor}`;
+  $('o_ibm_esp').textContent = brl(ibm.esperado);
+
+  // roi
   const roiCard = $('roiCard');
-  if (res.resultado_investimento){
-    const r = res.resultado_investimento;
-    $('o_roi').textContent = `${r.roi_esperado}%`;
+  if (res.investimento){
+    const r = res.investimento;
+    $('o_roi').textContent = `${r.roi}%`;
     $('o_payback').textContent = r.payback_anos!=null ? `payback ${r.payback_anos} ano(s)` : 'sem payback';
-    $('o_economia').textContent = brl(r.economia_esperada);
+    $('o_economia').textContent = brl(r.economia);
     $('o_horizonte').textContent = `em ${p.horizonte_anos} ano(s)`;
     $('o_rec').textContent = r.recomendacao;
-    roiCard.className = 'card roi-card ' + (r.roi_esperado>0 ? 'pos' : 'neg');
+    roiCard.className = 'card roi-card ' + (r.roi>0 ? 'pos' : 'neg');
   } else {
-    $('o_roi').textContent = '—'; $('o_payback').textContent='';
+    $('o_roi').textContent='—'; $('o_payback').textContent='';
     $('o_economia').textContent='—'; $('o_horizonte').textContent='';
-    $('o_rec').textContent = 'Informe um investimento em segurança para ver o ROI.';
-    roiCard.className = 'card roi-card';
+    $('o_rec').textContent='Informe um investimento em segurança para ver o ROI.';
+    roiCard.className='card roi-card';
   }
 
-  const cp = res.cenario_pos_investimento;
-  const litSem = c.exposure_total_esperado, anpdSem = c.multa_anpd_esperada;
-  const litCom = cp ? cp.exposure_total_esperado : litSem;
-  const anpdCom = cp ? cp.multa_anpd_esperada : anpdSem;
-  Plotly.react('chart', [
-    { x:['Sem investimento','Com investimento'], y:[litSem,litCom], name:'Litígio', type:'bar', marker:{color:'#0F2940'} },
-    { x:['Sem investimento','Com investimento'], y:[anpdSem,anpdCom], name:'Multa ANPD', type:'bar', marker:{color:'#C9A227'} },
+  // sensibilidade
+  const s = res.sensibilidade;
+  Plotly.react('chartSens', [
+    { x:s.map(d=>d.p*100), y:s.map(d=>d.total), type:'scatter', mode:'lines', line:{color:'#0F2940',width:2}, name:'esperado', hovertemplate:'P %{x}%%: R$ %{y:,.0f}<extra></extra>' },
+    { x:[res.prob.p_multa*100], y:[e.total], type:'scatter', mode:'markers', marker:{color:'#C9A227',size:12}, name:'atual', hovertemplate:'atual: R$ %{y:,.0f}<extra></extra>' },
   ], {
-    barmode:'stack', margin:{t:10,r:10,b:30,l:60}, font:{family:'Inter Tight',size:12,color:'#1C1E22'},
+    margin:{t:10,r:10,b:38,l:64}, font:{family:'Inter Tight',size:12,color:'#1C1E22'}, showlegend:false,
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-    legend:{orientation:'h',y:-0.18}, yaxis:{tickprefix:'R$ ',gridcolor:'#E6E9ED'}, xaxis:{},
+    xaxis:{title:'P(multa ANPD) %',gridcolor:'#E6E9ED'}, yaxis:{tickprefix:'R$ ',gridcolor:'#E6E9ED'},
+  }, {displayModeBar:false, responsive:true});
+
+  // sem vs com
+  const totalComAno = res.investimento ? res.investimento.exposicao_com/(p.horizonte_anos||1) : e.total;
+  Plotly.react('chart', [
+    { x:['Sem investimento','Com investimento'], y:[e.total, totalComAno], type:'bar', marker:{color:['#0F2940','#2E5D4F']} },
+  ], {
+    margin:{t:10,r:10,b:30,l:64}, font:{family:'Inter Tight',size:12,color:'#1C1E22'}, showlegend:false,
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    yaxis:{tickprefix:'R$ ',gridcolor:'#E6E9ED'},
   }, {displayModeBar:false, responsive:true});
 }
 
 function renderContext(){
   const j = DATA.jurisprudencia, f = DATA.fonte;
-  $('c_ano').textContent = '~'+num(f.datajud_por_ano);
-  $('c_mediana').textContent = brl(j.valor_mediano);
-  $('c_media').textContent = 'média '+brl(j.valor_medio);
-  $('c_proc').textContent = (j.taxa_procedencia*100).toFixed(0)+'%';
-  $('c_comvalor').textContent = num(j.total_com_valor)+' acórdãos com valor';
-  $('c_erro').textContent = (f.calibracao_erro*100).toFixed(1)+'%';
-
+  $('c_ano').textContent='~'+num(f.datajud_por_ano);
+  $('c_mediana').textContent=brl(j.valor_mediano);
+  $('c_media').textContent='média '+brl(j.valor_medio);
+  $('c_proc').textContent=(j.taxa_procedencia*100).toFixed(0)+'%';
+  $('c_comvalor').textContent=num(j.total_com_valor)+' acórdãos com valor';
+  $('c_erro').textContent=(f.calibracao_erro*100).toFixed(1)+'%';
   const top = j.por_uf.slice(0,10).reverse();
   Plotly.react('chartUf', [{
     type:'bar', orientation:'h', x:top.map(u=>u.n), y:top.map(u=>u.uf),
@@ -265,8 +344,15 @@ function renderContext(){
 async function boot(){
   DATA = await fetch('./data.json').then(r=>r.json());
   document.querySelectorAll('#inputs input, #inputs select').forEach(el=>{
-    el.addEventListener('input', render);
-    el.addEventListener('change', render);
+    el.addEventListener('input', render); el.addEventListener('change', render);
+  });
+  ['p_breach','p_sue','p_multa'].forEach(k=>{
+    $(k).addEventListener('input', ()=>{ overridden[k]=true; render(); });
+  });
+  $('reset_prob').addEventListener('click', (ev)=>{
+    ev.preventDefault();
+    overridden.p_breach=overridden.p_sue=overridden.p_multa=false;
+    render();
   });
   render();
   renderContext();
