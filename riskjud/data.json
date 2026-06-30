@@ -1,0 +1,114 @@
+{
+  "benchmark": {
+    "valor_medio_causa": 11346.43,
+    "taxa_procedencia": 0.6967
+  },
+  "jurisprudencia": {
+    "total_acordaos": 1968,
+    "total_com_valor": 675,
+    "valor_medio": 11346.43,
+    "valor_mediano": 5000.0,
+    "taxa_procedencia": 0.6967,
+    "cobertura_uf": 13,
+    "por_uf": [
+      {
+        "uf": "SP",
+        "n": 1039,
+        "media": 10829.92,
+        "mediana": 5000.0,
+        "com_valor": 288
+      },
+      {
+        "uf": "RS",
+        "n": 428,
+        "media": 9882.05,
+        "mediana": 5601.96,
+        "com_valor": 116
+      },
+      {
+        "uf": "ES",
+        "n": 108,
+        "media": 20908.22,
+        "mediana": 10000.0,
+        "com_valor": 45
+      },
+      {
+        "uf": "PR",
+        "n": 70,
+        "media": 6419.8,
+        "mediana": 4999.99,
+        "com_valor": 25
+      },
+      {
+        "uf": "BA",
+        "n": 61,
+        "media": 2273.29,
+        "mediana": 3000.0,
+        "com_valor": 61
+      },
+      {
+        "uf": "SC",
+        "n": 45,
+        "media": 20825.26,
+        "mediana": 8146.07,
+        "com_valor": 29
+      },
+      {
+        "uf": "AL",
+        "n": 37,
+        "media": 11885.66,
+        "mediana": 8000.0,
+        "com_valor": 17
+      },
+      {
+        "uf": "RJ",
+        "n": 14,
+        "media": 4532.64,
+        "mediana": 5000.0,
+        "com_valor": 8
+      },
+      {
+        "uf": "AC",
+        "n": 10,
+        "media": 3502.12,
+        "mediana": 2008.49,
+        "com_valor": 5
+      },
+      {
+        "uf": "DF",
+        "n": 6,
+        "media": 8000.0,
+        "mediana": 8000.0,
+        "com_valor": 1
+      },
+      {
+        "uf": "MG",
+        "n": 5,
+        "media": 0.0,
+        "mediana": 0.0,
+        "com_valor": 0
+      },
+      {
+        "uf": "CE",
+        "n": 1,
+        "media": 0.0,
+        "mediana": 0.0,
+        "com_valor": 0
+      },
+      {
+        "uf": "MT",
+        "n": 1,
+        "media": 0.0,
+        "mediana": 0.0,
+        "com_valor": 0
+      }
+    ]
+  },
+  "fonte": {
+    "datajud_processos": 4878,
+    "datajud_por_ano": 813,
+    "ibm_codb_2025_brasil": 7190000,
+    "calibracao_erro": 0.086,
+    "data_coleta": "2026-06-27"
+  }
+}

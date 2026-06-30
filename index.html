@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apps · Janilo Saraiva</title>
+<meta name="description" content="Ferramentas que eu construí. Cada uma roda no navegador, com dado real por trás." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --marine:#0F2940; --purple:#4A1942; --green:#2E5D4F; --gold:#C9A227;
+    --ink:#1C1E22; --muted:#565A60; --stone:#D4D8DD; --cream:#ECEEF1;
+    --offwhite:#F6F8FA; --white:#FFFFFF;
+  }
+  * { box-sizing:border-box; font-family:'Inter Tight',system-ui,sans-serif; }
+  body { margin:0; background:var(--cream); color:var(--ink); line-height:1.5; }
+  .wrap { max-width:920px; margin:0 auto; padding:3.5rem 1.25rem 4rem; }
+  .mark { font-family:'Fraunces',serif; font-weight:600; font-size:2.2rem; color:var(--marine); letter-spacing:-.015em; margin:0; }
+  .mark .dot { color:var(--gold); }
+  .intro { color:var(--muted); font-size:1.02rem; margin:.4rem 0 2.5rem; max-width:46ch; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.1rem; }
+  a.card { display:block; text-decoration:none; color:inherit; background:var(--white); border:1px solid var(--stone); border-radius:10px; padding:1.4rem 1.5rem; box-shadow:0 1px 0 rgba(31,31,31,.03),0 2px 10px rgba(31,31,31,.04); transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+  a.card:hover { transform:translateY(-2px); box-shadow:0 4px 18px rgba(31,31,31,.10); border-color:var(--gold); }
+  .card .name { font-family:'Fraunces',serif; font-size:1.3rem; font-weight:600; color:var(--marine); margin:0 0 .35rem; }
+  .card .desc { font-size:.9rem; color:var(--muted); margin:0 0 .9rem; }
+  .card .go { font-size:.8rem; font-weight:600; color:var(--green); letter-spacing:.02em; }
+  .card .tag { display:inline-block; font-size:.66rem; text-transform:uppercase; letter-spacing:.14em; color:var(--gold); font-weight:600; margin-bottom:.5rem; }
+  footer { margin-top:3rem; padding-top:1.25rem; border-top:1px solid var(--stone); font-size:.82rem; color:var(--muted); }
+  footer a { color:var(--marine); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="mark">Apps<span class="dot">.</span></h1>
+  <p class="intro">Ferramentas que eu construí. Cada uma roda no navegador, com dado real por trás.</p>
+
+  <div class="grid">
+    <a class="card" href="/riskjud/">
+      <span class="tag">LGPD · Risco</span>
+      <p class="name">RiskJud</p>
+      <p class="desc">Quanto custa, em indenização e multa, um vazamento de dados no Brasil. Calibrado contra 4.878 processos do DataJud e 1.968 acórdãos.</p>
+      <span class="go">Abrir →</span>
+    </a>
+  </div>
+
+  <footer>
+    Por <a href="https://pereirasaraiva.com">Janilo Saraiva</a>.
+  </footer>
+</div>
+</body>
+</html>

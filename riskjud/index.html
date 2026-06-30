@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RiskJud · Precificação de risco LGPD</title>
+<meta name="description" content="Quanto custa um vazamento de dados no Brasil? Modelo de risco LGPD calibrado contra 4.878 processos reais do DataJud e 1.968 acórdãos." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    --marine:#0F2940; --purple:#4A1942; --green:#2E5D4F; --gold:#C9A227;
+    --ink:#1C1E22; --muted:#565A60; --stone:#D4D8DD; --cream:#ECEEF1;
+    --offwhite:#F6F8FA; --white:#FFFFFF; --danger:#B00020;
+  }
+  * { box-sizing:border-box; font-family:'Inter Tight',system-ui,sans-serif; }
+  body { margin:0; background:var(--cream); color:var(--ink); line-height:1.5; }
+  .wrap { max-width:1080px; margin:0 auto; padding:2rem 1.25rem 4rem; }
+  header.site { display:flex; align-items:baseline; gap:.6rem; margin-bottom:.25rem; }
+  header.site .mark { font-family:'Fraunces',serif; font-weight:600; font-size:1.6rem; color:var(--marine); letter-spacing:-.01em; }
+  header.site .dot { color:var(--gold); }
+  .tagline { color:var(--muted); font-size:.95rem; margin:0 0 1.25rem; }
+  h2 { font-size:1.15rem; color:var(--marine); font-weight:600; letter-spacing:-.01em; margin:2rem 0 .75rem; }
+  .disclaimer { background:#FBF6E6; border:1px solid var(--gold); border-radius:6px; padding:.85rem 1rem; font-size:.84rem; color:#5b4d18; margin-bottom:1.5rem; }
+  .disclaimer b { color:#3f360f; }
+  .grid { display:grid; grid-template-columns:340px 1fr; gap:1.25rem; align-items:start; }
+  @media (max-width:820px){ .grid { grid-template-columns:1fr; } }
+  .card { background:var(--white); border:1px solid var(--stone); border-radius:8px; padding:1.1rem 1.2rem; box-shadow:0 1px 0 rgba(31,31,31,.03),0 2px 10px rgba(31,31,31,.04); margin-bottom:1.1rem; }
+  .card h3 { margin:0 0 .9rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.16em; color:var(--muted); font-weight:600; }
+  label { display:block; font-size:.8rem; font-weight:500; margin:.7rem 0 .25rem; color:var(--ink); }
+  label:first-of-type { margin-top:0; }
+  input[type=number], select { width:100%; padding:.5rem .6rem; border:1px solid var(--stone); border-radius:5px; font-size:.9rem; background:var(--offwhite); color:var(--ink); }
+  input[type=range]{ width:100%; accent-color:var(--marine); }
+  .checks { display:grid; grid-template-columns:1fr 1fr; gap:.3rem .5rem; margin-top:.3rem; }
+  .checks label { display:flex; align-items:center; gap:.4rem; font-weight:400; font-size:.83rem; margin:.15rem 0; cursor:pointer; }
+  .checks input { accent-color:var(--marine); }
+  .hint { font-size:.72rem; color:var(--muted); margin-top:.15rem; }
+  .stat-row { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+  .stat { background:var(--offwhite); border:1px solid var(--stone); border-radius:6px; padding:.8rem .9rem; }
+  .stat .k { font-size:.68rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); font-weight:600; }
+  .stat .v { font-size:1.45rem; font-weight:600; color:var(--marine); margin-top:.15rem; letter-spacing:-.02em; }
+  .stat .v.big { font-size:1.8rem; }
+  .stat .sub { font-size:.74rem; color:var(--muted); margin-top:.1rem; }
+  .badge { display:inline-block; padding:.2rem .6rem; border-radius:999px; font-size:.78rem; font-weight:600; }
+  .b-Baixo{ background:#E3F0EA; color:var(--green);} .b-Médio{ background:#FBF6E6; color:#8a6d10;}
+  .b-Alto{ background:#F7E4D6; color:#9a4b16;} .b-Crítico{ background:#F8D7DA; color:var(--danger);}
+  .roi-card { border-left:4px solid var(--gold); }
+  .roi-card.pos { border-left-color:var(--green); } .roi-card.neg { border-left-color:var(--danger); }
+  .rec { font-size:.86rem; color:var(--ink); margin-top:.5rem; }
+  .ctx-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:.8rem; margin-bottom:1rem; }
+  @media (max-width:680px){ .ctx-stats{ grid-template-columns:1fr 1fr; } .stat-row{grid-template-columns:1fr;} }
+  footer { margin-top:2.5rem; padding-top:1.25rem; border-top:1px solid var(--stone); font-size:.78rem; color:var(--muted); }
+  footer a { color:var(--marine); }
+  .src { font-size:.72rem; color:var(--muted); line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site"><span class="mark">RiskJud</span><span class="dot">●</span></header>
+  <p class="tagline">Quanto custa, em indenização e multa, um vazamento de dados no Brasil. Calibrado contra dados reais de tribunal.</p>
+
+  <div class="disclaimer">
+    <b>Como ler:</b> estimativa, não aconselhamento jurídico. O <b>litígio</b> é calibrado contra ~813 ações de LGPD/ano no Brasil inteiro, então a exposição de uma empresa tende a ser pequena. A <b>multa da ANPD</b> é um teto teórico (Art. 52: até 2% do faturamento, limite R$ 50M); a fiscalização ainda é incipiente, leia como pior caso, não custo esperado.
+  </div>
+
+  <div class="grid">
+    <div class="card" id="inputs">
+      <h3>Perfil da empresa</h3>
+      <label for="base">Base de usuários</label>
+      <input type="number" id="base" min="1000" max="100000000" step="10000" value="100000" />
+
+      <label for="porte">Porte</label>
+      <select id="porte">
+        <option value="mei">MEI</option>
+        <option value="pequena">Pequena</option>
+        <option value="media" selected>Média</option>
+        <option value="grande">Grande</option>
+      </select>
+
+      <label for="setor">Setor</label>
+      <select id="setor">
+        <option value="geral">Geral</option>
+        <option value="financeiro" selected>Financeiro [dados reais]</option>
+        <option value="varejo">Varejo [dados reais]</option>
+        <option value="saude">Saúde [est.]</option>
+        <option value="tecnologia">Tecnologia [est.]</option>
+        <option value="telecom">Telecom [est.]</option>
+        <option value="seguradora">Seguradora [est.]</option>
+        <option value="educacao">Educação [est.]</option>
+      </select>
+
+      <label>Dados armazenados</label>
+      <div class="checks">
+        <label><input type="checkbox" id="d_pessoais" checked /> Pessoais</label>
+        <label><input type="checkbox" id="d_financeiros" checked /> Financeiros</label>
+        <label><input type="checkbox" id="d_cartao" /> Cartão</label>
+        <label><input type="checkbox" id="d_saude" /> Saúde</label>
+      </div>
+
+      <label for="maturidade">Maturidade de segurança</label>
+      <select id="maturidade">
+        <option value="basico">Básico</option>
+        <option value="intermediario" selected>Intermediário</option>
+        <option value="avancado">Avançado</option>
+      </select>
+
+      <label for="faturamento">Faturamento anual no Brasil (R$) · multa ANPD</label>
+      <input type="number" id="faturamento" min="0" step="1000000" value="50000000" />
+
+      <label for="investimento">Investimento em segurança (R$)</label>
+      <input type="number" id="investimento" min="0" step="50000" value="200000" />
+
+      <label for="horizonte">Horizonte (anos)</label>
+      <input type="number" id="horizonte" min="1" max="10" step="1" value="1" />
+
+      <label>Fatores</label>
+      <div class="checks">
+        <label><input type="checkbox" id="reincidencia" /> Reincidente</label>
+        <label><input type="checkbox" id="provas" /> Provas concretas</label>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>Exposição esperada por ano</h3>
+        <div class="stat-row">
+          <div class="stat"><div class="k">Total (litígio + ANPD)</div><div class="v big" id="o_total">—</div><div class="sub" id="o_nivel"></div></div>
+          <div class="stat"><div class="k">Risco</div><div class="v" id="o_badge">—</div><div class="sub" id="o_perfil"></div></div>
+        </div>
+        <div class="stat-row" style="margin-top:.8rem">
+          <div class="stat"><div class="k">Indenização (litígio)</div><div class="v" id="o_litigio">—</div><div class="sub" id="o_proc"></div></div>
+          <div class="stat"><div class="k">Multa ANPD (esperada)</div><div class="v" id="o_anpd">—</div><div class="sub" id="o_anpd_teto"></div></div>
+        </div>
+      </div>
+
+      <div class="card roi-card" id="roiCard">
+        <h3>Retorno do investimento em segurança</h3>
+        <div class="stat-row">
+          <div class="stat"><div class="k">ROI no horizonte</div><div class="v" id="o_roi">—</div><div class="sub" id="o_payback"></div></div>
+          <div class="stat"><div class="k">Economia esperada</div><div class="v" id="o_economia">—</div><div class="sub" id="o_horizonte"></div></div>
+        </div>
+        <p class="rec" id="o_rec"></p>
+      </div>
+
+      <div class="card">
+        <h3>Exposição: sem vs. com investimento</h3>
+        <div id="chart" style="height:280px"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>O dado real por trás do modelo</h2>
+  <div class="ctx-stats">
+    <div class="stat"><div class="k">Processos/ano</div><div class="v" id="c_ano">—</div><div class="sub">DataJud, 4.878 em 2020–2025</div></div>
+    <div class="stat"><div class="k">Indenização mediana</div><div class="v" id="c_mediana">—</div><div class="sub" id="c_media"></div></div>
+    <div class="stat"><div class="k">Procedência</div><div class="v" id="c_proc">—</div><div class="sub" id="c_comvalor"></div></div>
+    <div class="stat"><div class="k">Calibração</div><div class="v" id="c_erro">—</div><div class="sub">previsto vs. DataJud</div></div>
+  </div>
+  <div class="card">
+    <h3>Onde estão os processos (acórdãos de LGPD por estado)</h3>
+    <div id="chartUf" style="height:300px"></div>
+    <p class="hint">A litigância é concentrada: poucos estados respondem por quase tudo. Parte é cobertura de indexação, parte é volume real. O risco de ser processado depende de onde você e seus clientes estão.</p>
+  </div>
+
+  <footer>
+    <p class="src">
+      <b>Fontes.</b> DataJud/CNJ (4.878 processos de proteção de dados, 34 tribunais, 2020–2025). Jurisprudência: JurisFonte + TJES (1.968 acórdãos, 675 com valor). Benchmark externo: IBM Cost of a Data Breach 2025 (Brasil R$ 7,19M, custo total de incidente, métrica distinta da indenização judicial). Multa ANPD: Art. 52 da LGPD. Modelo determinístico calibrado a 8,6% de erro contra o volume do DataJud. Coleta: jun/2026.
+    </p>
+    <p>Construído por <a href="https://pereirasaraiva.com">Janilo Saraiva</a>. Demonstração de método, não substitui análise jurídica.</p>
+  </footer>
+</div>
+
+<script type="module">
+import { analisar } from './model.mjs';
+
+const brl = (x) => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(x||0);
+const num = (x) => new Intl.NumberFormat('pt-BR').format(x||0);
+const $ = (id) => document.getElementById(id);
+let DATA = null;
+
+function readParams(){
+  return {
+    base_usuarios: +$('base').value || 0,
+    porte_empresa: $('porte').value,
+    setor: $('setor').value,
+    dados_pessoais: $('d_pessoais').checked,
+    dados_financeiros: $('d_financeiros').checked,
+    dados_cartao: $('d_cartao').checked,
+    dados_saude: $('d_saude').checked,
+    maturidade_seguranca: $('maturidade').value,
+    faturamento_brasil: +$('faturamento').value || 0,
+    investimento_incremental: +$('investimento').value || 0,
+    horizonte_anos: +$('horizonte').value || 1,
+    reincidencia: $('reincidencia').checked,
+    provas_concretas: $('provas').checked,
+  };
+}
+
+function render(){
+  const p = readParams();
+  const res = analisar(p, DATA);
+  const c = res.cenario_atual;
+
+  $('o_total').textContent = brl(c.exposure_total_com_anpd);
+  $('o_nivel').textContent = `por ano · base ${num(p.base_usuarios)} usuários`;
+  $('o_badge').innerHTML = `<span class="badge b-${c.nivel_risco}">${c.nivel_risco}</span>`;
+  $('o_perfil').textContent = `${p.porte_empresa} · ${p.setor}`;
+  $('o_litigio').textContent = brl(c.exposure_total_esperado);
+  $('o_proc').textContent = `${c.processos_esperados} ações esperadas se vazar`;
+  $('o_anpd').textContent = brl(c.multa_anpd_esperada);
+  $('o_anpd_teto').textContent = p.faturamento_brasil>0 ? `teto do cenário: ${brl(c.multa_anpd_cenario_breach)}` : 'informe faturamento';
+
+  const roiCard = $('roiCard');
+  if (res.resultado_investimento){
+    const r = res.resultado_investimento;
+    $('o_roi').textContent = `${r.roi_esperado}%`;
+    $('o_payback').textContent = r.payback_anos!=null ? `payback ${r.payback_anos} ano(s)` : 'sem payback';
+    $('o_economia').textContent = brl(r.economia_esperada);
+    $('o_horizonte').textContent = `em ${p.horizonte_anos} ano(s)`;
+    $('o_rec').textContent = r.recomendacao;
+    roiCard.className = 'card roi-card ' + (r.roi_esperado>0 ? 'pos' : 'neg');
+  } else {
+    $('o_roi').textContent = '—'; $('o_payback').textContent='';
+    $('o_economia').textContent='—'; $('o_horizonte').textContent='';
+    $('o_rec').textContent = 'Informe um investimento em segurança para ver o ROI.';
+    roiCard.className = 'card roi-card';
+  }
+
+  const cp = res.cenario_pos_investimento;
+  const litSem = c.exposure_total_esperado, anpdSem = c.multa_anpd_esperada;
+  const litCom = cp ? cp.exposure_total_esperado : litSem;
+  const anpdCom = cp ? cp.multa_anpd_esperada : anpdSem;
+  Plotly.react('chart', [
+    { x:['Sem investimento','Com investimento'], y:[litSem,litCom], name:'Litígio', type:'bar', marker:{color:'#0F2940'} },
+    { x:['Sem investimento','Com investimento'], y:[anpdSem,anpdCom], name:'Multa ANPD', type:'bar', marker:{color:'#C9A227'} },
+  ], {
+    barmode:'stack', margin:{t:10,r:10,b:30,l:60}, font:{family:'Inter Tight',size:12,color:'#1C1E22'},
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    legend:{orientation:'h',y:-0.18}, yaxis:{tickprefix:'R$ ',gridcolor:'#E6E9ED'}, xaxis:{},
+  }, {displayModeBar:false, responsive:true});
+}
+
+function renderContext(){
+  const j = DATA.jurisprudencia, f = DATA.fonte;
+  $('c_ano').textContent = '~'+num(f.datajud_por_ano);
+  $('c_mediana').textContent = brl(j.valor_mediano);
+  $('c_media').textContent = 'média '+brl(j.valor_medio);
+  $('c_proc').textContent = (j.taxa_procedencia*100).toFixed(0)+'%';
+  $('c_comvalor').textContent = num(j.total_com_valor)+' acórdãos com valor';
+  $('c_erro').textContent = (f.calibracao_erro*100).toFixed(1)+'%';
+
+  const top = j.por_uf.slice(0,10).reverse();
+  Plotly.react('chartUf', [{
+    type:'bar', orientation:'h', x:top.map(u=>u.n), y:top.map(u=>u.uf),
+    marker:{color:'#2E5D4F'}, text:top.map(u=>u.n), textposition:'auto',
+  }], {
+    margin:{t:10,r:20,b:30,l:40}, font:{family:'Inter Tight',size:12,color:'#1C1E22'},
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    xaxis:{title:'acórdãos',gridcolor:'#E6E9ED'}, yaxis:{automargin:true},
+  }, {displayModeBar:false, responsive:true});
+}
+
+async function boot(){
+  DATA = await fetch('./data.json').then(r=>r.json());
+  document.querySelectorAll('#inputs input, #inputs select').forEach(el=>{
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+  render();
+  renderContext();
+}
+boot();
+</script>
+</body>
+</html>
