@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../site-chrome.css" />
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 <style>
   :root {
@@ -82,6 +83,21 @@
 </style>
 </head>
 <body>
+<header class="sc-header">
+  <div class="sc-header__in">
+    <a class="sc-word" href="https://pereirasaraiva.com/" aria-label="J P Saraiva, início">J P Saraiva</a>
+    <nav class="sc-nav">
+      <a class="sc-link" href="https://pereirasaraiva.com/servicos">Serviços</a>
+      <a class="sc-link" href="https://pereirasaraiva.com/cases">Cases</a>
+      <a class="sc-link" href="https://pereirasaraiva.com/produtos">Produtos</a>
+      <a class="sc-link" href="https://pereirasaraiva.com/blog">Blog</a>
+      <a class="sc-link" href="https://pereirasaraiva.com/newsletter">Newsletter</a>
+      <a class="sc-link" href="https://pereirasaraiva.com/sobre">Sobre</a>
+      <a class="sc-link" href="https://pereirasaraiva.com/contato">Contato</a>
+      <a class="sc-cta" href="https://cal.com/jpsaraiva/30min" target="_blank" rel="noopener noreferrer">Agendar <span aria-hidden="true">→</span></a>
+    </nav>
+  </div>
+</header>
 <div class="wrap">
   <header class="site"><span class="mark">RiskJud</span><span class="dot">●</span></header>
   <div class="printhead">Exposição de risco LGPD · cenário gerado em <span id="printdate"></span></div>
@@ -274,6 +290,51 @@
     <p class="src"><b>Modelo datado.</b> Modelo v2.1, dado de jun/2026. O alvo legal está em movimento (STJ e ANPD, 2023–2025); recalibrar periodicamente.</p>
   </footer>
 </div>
+
+<footer class="sc-footer">
+  <div class="sc-footer__top">
+    <div>
+      <span class="sc-fmark">J P Saraiva</span>
+      <p class="sc-ftag">Pricing, growth, analytics e leitura executiva. Consultoria independente, sediada em São Paulo.</p>
+      <a class="sc-fli" href="https://linkedin.com/company/j-p-saraiva/" target="_blank" rel="noopener noreferrer" aria-label="J P Saraiva no LinkedIn">
+        <svg class="sc-fli-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.95v5.66H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+        LinkedIn da empresa
+      </a>
+    </div>
+    <nav class="sc-fnav">
+      <a href="https://pereirasaraiva.com/servicos">Serviços</a>
+      <a href="https://pereirasaraiva.com/cases">Cases</a>
+      <a href="https://pereirasaraiva.com/blog">Blog</a>
+      <a href="https://pereirasaraiva.com/newsletter">Newsletter</a>
+      <a href="https://pereirasaraiva.com/sobre">Sobre</a>
+      <a href="https://pereirasaraiva.com/contato">Contato</a>
+    </nav>
+  </div>
+  <div class="sc-band">
+    <div class="sc-band__in">
+      <div>
+        <p class="sc-nl-k">Growth Shot · Newsletter</p>
+        <p class="sc-nl-d">Segunda a sexta. Growth, pricing e analytics, sinal, fonte e por que importa.</p>
+      </div>
+      <a class="sc-cta" href="https://pereirasaraiva.com/newsletter">Inscrever <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+  <div class="sc-band">
+    <div class="sc-band__in">
+      <p class="sc-resp">Quer participar como respondente de pesquisas?</p>
+      <a class="sc-fli" style="margin-top:0" href="https://pereirasaraiva.com/respondentes">Cadastre-se aqui <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+  <div class="sc-bottom">
+    <div class="sc-bottom__in">
+      <span>J P Saraiva © 2026</span>
+      <div class="sc-legal">
+        <a href="https://pereirasaraiva.com/privacidade">Privacidade</a>
+        <a href="https://pereirasaraiva.com/termos">Termos</a>
+      </div>
+    </div>
+  </div>
+</footer>
 
 <script type="module">
 import { analisar } from './model.mjs';

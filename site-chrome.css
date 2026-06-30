@@ -1,0 +1,65 @@
+/* J P Saraiva — chrome compartilhado (header + footer) de apps.pereirasaraiva.com.
+   Espelha o header/footer de pereirasaraiva.com. Tokens da marca v2.
+   Fontes (Fraunces + Inter Tight) são carregadas por cada página. Classes namespaced sc-*. */
+:root{
+  --sc-purple:#4a1942; --sc-purple-deep:#3a1334; --sc-gold:#c9a227;
+  --sc-ink:#1c1e22; --sc-soft:#7a8088; --sc-muted:#565a60;
+  --sc-stone:#d4d8dd; --sc-cream:#eceef1; --sc-offwhite:#f6f8fa;
+}
+.sc-header *, .sc-footer *{ box-sizing:border-box; }
+
+/* ---------- header ---------- */
+.sc-header{ position:sticky; top:0; z-index:50; border-bottom:1px solid var(--sc-stone);
+  background:rgba(236,238,241,.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  font-family:'Inter Tight',system-ui,sans-serif; }
+.sc-header__in{ max-width:72rem; margin:0 auto; display:flex; align-items:center; justify-content:space-between;
+  gap:1rem; padding:1.05rem 1.5rem; }
+@media (min-width:768px){ .sc-header__in{ padding:1.2rem 2.5rem; } }
+.sc-word{ font-family:'Fraunces',Georgia,serif; font-weight:500; font-size:22px; line-height:1;
+  letter-spacing:-.02em; color:var(--sc-purple); text-decoration:none; transition:opacity .15s; white-space:nowrap; }
+@media (min-width:768px){ .sc-word{ font-size:26px; } }
+.sc-word:hover{ opacity:.85; }
+.sc-nav{ display:flex; align-items:center; gap:1.35rem; }
+.sc-link{ font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.18em;
+  color:var(--sc-ink); text-decoration:none; transition:opacity .15s; white-space:nowrap; }
+.sc-link:hover{ opacity:.85; }
+.sc-cta{ display:inline-flex; align-items:center; gap:.5rem; border:1px solid var(--sc-purple);
+  background:var(--sc-purple); color:var(--sc-offwhite); padding:.6rem 1rem; font-size:11px;
+  font-weight:600; text-transform:uppercase; letter-spacing:.18em; text-decoration:none;
+  transition:background-color .15s; white-space:nowrap; }
+.sc-cta:hover{ background:var(--sc-purple-deep); }
+@media (max-width:760px){ .sc-link{ display:none; } } /* mobile: mantém wordmark + Agendar (espelha o site) */
+
+/* ---------- footer ---------- */
+.sc-footer{ margin-top:3rem; border-top:1px solid var(--sc-stone); background:var(--sc-offwhite);
+  font-family:'Inter Tight',system-ui,sans-serif; color:var(--sc-ink); }
+.sc-footer__top{ max-width:72rem; margin:0 auto; display:flex; flex-wrap:wrap; gap:2.5rem;
+  justify-content:space-between; padding:3.25rem 1.5rem; }
+@media (min-width:768px){ .sc-footer__top{ padding:3.5rem 2.5rem; } }
+.sc-fmark{ display:inline-flex; align-items:center; background:var(--sc-ink); color:var(--sc-gold);
+  padding:.5rem 1rem; font-family:'Fraunces',Georgia,serif; font-weight:500; font-size:22px; line-height:1; }
+.sc-ftag{ margin:1rem 0 0; max-width:28rem; font-size:14px; color:var(--sc-muted); line-height:1.5; }
+.sc-fli{ margin-top:1.5rem; display:inline-flex; align-items:center; gap:.5rem; font-size:12px;
+  font-weight:600; text-transform:uppercase; letter-spacing:.18em; color:var(--sc-purple); text-decoration:none; }
+.sc-fli:hover{ opacity:.85; }
+.sc-fli-ico{ width:16px; height:16px; }
+.sc-fnav{ display:flex; flex-direction:column; gap:.65rem; font-size:12px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.18em; }
+.sc-fnav a{ color:var(--sc-ink); text-decoration:none; }
+.sc-fnav a:hover{ opacity:.85; }
+.sc-band{ border-top:1px solid var(--sc-stone); }
+.sc-band__in{ max-width:72rem; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center;
+  justify-content:space-between; gap:1rem; padding:1.6rem 1.5rem; }
+@media (min-width:768px){ .sc-band__in{ padding:1.6rem 2.5rem; } }
+.sc-nl-k{ margin:0; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.22em; color:var(--sc-soft); }
+.sc-nl-d{ margin:.25rem 0 0; font-size:14px; color:var(--sc-ink); }
+.sc-resp{ margin:0; font-size:13px; color:var(--sc-muted); }
+.sc-bottom{ border-top:1px solid var(--sc-stone); }
+.sc-bottom__in{ max-width:72rem; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center;
+  justify-content:space-between; gap:1rem; padding:1.25rem 1.5rem; font-size:11px;
+  text-transform:uppercase; letter-spacing:.22em; color:var(--sc-soft); }
+@media (min-width:768px){ .sc-bottom__in{ padding:1.25rem 2.5rem; } }
+.sc-bottom a{ color:var(--sc-soft); text-decoration:none; transition:color .15s; }
+.sc-bottom a:hover{ color:var(--sc-purple); }
+.sc-legal{ display:flex; gap:1.5rem; }
+@media print{ .sc-header, .sc-footer{ display:none !important; } }
