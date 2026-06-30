@@ -2,12 +2,23 @@
 // v2: ANPD calibrada à realidade, probabilidades como input, camadas de custo
 // separadas (judicial / ANPD / total-incidente IBM), esperado vs pior-caso.
 
+// P(vazamento/ano) por porte — JUÍZO editorial, NÃO calibrado contra dado (diferente da
+// indenização, que vem da jurisprudência). É a premissa que mais move a magnitude; ajustável.
 const PORTE_BREACH_BASE = { mei: 0.12, pequena: 0.20, media: 0.30, grande: 0.40 };
 const DATA_TYPE_BREACH_MULT = { financeiro: 1.30, saude: 1.50, cartao: 1.40, pessoal: 1.00 };
 const MATURITY_REDUCTION = { basico: 1.00, intermediario: 0.50, avancado: 0.15 };
+// Fração dos usuários afetada num vazamento, por cenário (editável: pequeno/esperado/grande).
 const BREACH_SCENARIOS = { pequeno: 0.01, esperado: 0.05, grande: 0.15 };
 
+// Multiplicador de dano por setor. Só financeiro e varejo têm base amostral (SETOR_N);
+// os demais usam 1,0 neutro (placeholder, sem base setorial). geral = base nacional.
 const SETOR_DANO_MULT = { geral: 1, financeiro: 1.26, saude: 1, varejo: 1.55, tecnologia: 1, telecom: 1, seguradora: 1, educacao: 1 };
+const SETOR_N = { financeiro: 42, varejo: 27 };
+
+// Procedência por natureza do dano (doutrina STJ): dado sensível tende ao dano presumido
+// (in re ipsa), dado comum exige prova do dano. Fator é JUÍZO sobre a taxa-base medida no
+// agregado (0,6967), NÃO taxa medida por tipo de dado. Disclosed na UI.
+const PROCEDENCIA_FATOR = { presumido: 1.12, misto: 1.0, comprovar: 0.85 };
 
 // pSue agora é a FRAÇÃO dos afetados que efetivamente processa (taxa per-capita),
 // NÃO uma probabilidade aplicada por cima de uma contagem de ações (isso double-contava
@@ -42,6 +53,7 @@ const DEFAULTS = {
   investimento_incremental: 0, horizonte_anos: 1, reincidencia: false,
   provas_concretas: false, porte_empresa: "media", setor: "geral",
   faturamento_brasil: 0,
+  cenario_vazamento: "esperado",
   // overrides de probabilidade (null = usar o default calculado)
   p_breach_override: null, p_sue_override: null, p_multa_override: null,
 };
@@ -79,13 +91,15 @@ function pMultaBase(q) {
   return p;
 }
 
+// Eficácia do investimento: curva CONTÍNUA e saturante (antes era degrau, e o ROI pulava
+// nos limiares de R$/usuário). rp reduz P(vazamento), ri reduz o impacto. Mesmas âncoras do
+// modelo antigo (perUser 1 → ~.15/.10, 3 → ~.32/.23, 10 → ~.54/.40), sem descontinuidade.
 function investmentEffectiveness(investimento, baseUsuarios) {
   const perUser = baseUsuarios > 0 ? investimento / baseUsuarios : 0;
   if (perUser <= 0) return { rp: 0.0, ri: 0.0 };
-  if (perUser <= 1) return { rp: 0.15, ri: 0.10 };
-  if (perUser <= 3) return { rp: 0.35, ri: 0.25 };
-  if (perUser <= 10) return { rp: 0.55, ri: 0.40 };
-  return { rp: 0.75, ri: 0.60 };
+  const rp = 0.75 * perUser / (perUser + 4);
+  const ri = 0.60 * perUser / (perUser + 5);
+  return { rp, ri };
 }
 
 function gravidadeMax(q) {
@@ -97,6 +111,15 @@ function gravidadeMax(q) {
   return tipos.length ? Math.max(...tipos.map((t) => get(ANPD_GRAVIDADE, t, 0.3))) : 0.3;
 }
 
+// Regime de dano (doutrina STJ) pela natureza do dado: sensível → presumido (in re ipsa),
+// só dado comum → a comprovar. Move a procedência aplicada. Premissa, não taxa medida por tipo.
+function regimeDano(q) {
+  if (q.dados_saude || q.dados_cartao) return "presumido";
+  if (q.dados_financeiros) return "misto";
+  if (q.dados_pessoais) return "comprovar";
+  return "misto";
+}
+
 // Núcleo: dada uma prob de vazamento (já com override/investimento), e as probs
 // efetivas de processo e multa, devolve os componentes de custo.
 function componentes(q, benchmark, pBreach, pSue, pMulta, impactoReduction) {
@@ -106,9 +129,13 @@ function componentes(q, benchmark, pBreach, pSue, pMulta, impactoReduction) {
   if (q.reincidencia) valor *= 1.2;
   valor *= get(SETOR_DANO_MULT, q.setor, 1.0);
   let taxa = get(benchmark, "taxa_procedencia", 0.65);
-  if (q.provas_concretas) taxa = Math.min(taxa * 1.2, 0.95);
+  const regime = regimeDano(q);
+  taxa *= get(PROCEDENCIA_FATOR, regime, 1.0); // ajuste doutrinário pela natureza do dano
+  if (q.provas_concretas) taxa *= 1.2;
+  taxa = Math.min(taxa, 0.95);
 
-  let affected = Math.min(BREACH_SCENARIOS.esperado * dataAttractiveness(q), 0.5) * (1 - impactoReduction);
+  const fracBase = get(BREACH_SCENARIOS, q.cenario_vazamento, BREACH_SCENARIOS.esperado);
+  let affected = Math.min(fracBase * dataAttractiveness(q), 0.5) * (1 - impactoReduction);
   const usuariosAfetados = Math.floor(q.base_usuarios * affected);
   // contagem de ações = fração que processa × afetados (uma propensão só, sem double-count)
   const processos = pSue * usuariosAfetados;
@@ -133,6 +160,7 @@ function componentes(q, benchmark, pBreach, pSue, pMulta, impactoReduction) {
     litigioSeVazar, litigioEsperado,
     anpdSeMultar, anpdEsperado,
     ibmPorIncidente,
+    taxaEfetiva: taxa, regimeDano: regime,
   };
 }
 
@@ -184,6 +212,10 @@ export function analisar(params, data) {
     total: r(sem.litigioEsperado + pBreach0 * p * sem.anpdSeMultar),
   }));
 
+  const setorMult = get(SETOR_DANO_MULT, q.setor, 1.0);
+  const setorN = get(SETOR_N, q.setor, 0);
+  const setorTipo = q.setor === "geral" ? "nacional" : (setorN > 0 ? "real" : "estimado");
+
   return {
     parametros: q,
     prob: { p_breach: r(pBreach0, 4), p_sue: r(pSue, 5), p_multa: r(pMulta, 4) },
@@ -192,6 +224,7 @@ export function analisar(params, data) {
       anpd: r(sem.anpdEsperado),
       total: r(totalEsperado),
       processos: r(sem.processos, 1),
+      afetados: sem.usuariosAfetados,
     },
     pior_caso: {
       litigio_se_vazar: r(sem.litigioSeVazar),
@@ -201,6 +234,8 @@ export function analisar(params, data) {
     ibm: {
       por_incidente: sem.ibmPorIncidente,
     },
+    setor_info: { mult: setorMult, n: setorN, tipo: setorTipo },
+    procedencia: { taxa: r(sem.taxaEfetiva, 4), regime: sem.regimeDano },
     investimento,
     sensibilidade,
   };

@@ -60,6 +60,10 @@
   footer { margin-top:2.5rem; padding-top:1.25rem; border-top:1px solid var(--stone); font-size:.78rem; color:var(--muted); }
   footer a { color:var(--marine); }
   .src { font-size:.72rem; color:var(--muted); line-height:1.6; }
+  .method { background:var(--white); border:1px solid var(--stone); border-radius:8px; padding:.2rem 1.2rem; margin-bottom:1.5rem; font-size:.84rem; color:var(--ink); }
+  .method summary { cursor:pointer; font-weight:600; color:var(--marine); padding:.75rem 0; list-style-position:inside; }
+  .method p { margin:.55rem 0; } .method ul { padding-left:1.1rem; margin:.4rem 0; } .method li { margin:.25rem 0; }
+  .method b { color:var(--marine); }
 </style>
 </head>
 <body>
@@ -70,6 +74,23 @@
   <div class="disclaimer">
     <b>Como ler:</b> estimativa, não aconselhamento jurídico. Este modelo mede <b>indenização judicial + multa ANPD</b>, que costuma ser a menor parte do custo de um vazamento. O grosso (resposta, forense, downtime, churn, reputação) fica de fora, e aparece só como referência na camada IBM. A <b>multa ANPD</b> tem magnitude definida em lei (Art. 52), mas probabilidade historicamente baixa: ajuste a <b>P(multa)</b> nas premissas e veja o resultado se mover.
   </div>
+
+  <details class="method">
+    <summary>Metodologia em 1 minuto · o que é dado e o que é juízo</summary>
+    <div>
+      <p><b>O que entrega.</b> A exposição esperada e o pior caso de <b>indenização judicial + multa ANPD</b> por ano, sob premissas que você controla. Não é o custo total de um incidente.</p>
+      <p><b>De onde vem cada número.</b></p>
+      <ul>
+        <li><b>Indenização</b> (mediana R$ 5.000, média R$ 11.346): 675 acórdãos de LGPD com valor (JurisFonte + TJES). <b>Dado medido.</b></li>
+        <li><b>Volume</b> (~813 ações/ano): 4.878 processos no DataJud/CNJ, 2020–2025. <b>Dado medido.</b></li>
+        <li><b>Litígio esperado</b> = P(vazamento) × fração dos afetados que processa × afetados × indenização × procedência × 1,2 (solidária, Art. 42).</li>
+        <li><b>Multa ANPD</b> = P(vazamento) × P(multa) × mín(2% do faturamento, R$ 50M) × gravidade (Art. 52).</li>
+        <li><b>Custo total de incidente</b> (R$ 7–11 mi): IBM Cost of a Data Breach 2025. Referência de mercado, não previsão, não se soma.</li>
+      </ul>
+      <p><b>Medido vs. juízo.</b> Indenização, volume e procedência-base vêm do dado. <b>P(vazamento), P(multa), fração que processa, multiplicador setorial, cenário de afetados e o regime de dano são juízo editorial</b>, ajustáveis nas premissas. O selo de aderência (8,6%) valida o volume nacional de ações, não o R$ por empresa.</p>
+      <p><b>Limites.</b> Modelo genérico: não vê seu inventário real, regulação setorial (Bacen/ANS/SUSEP) nem contratos B2B. Acórdãos concentrados em SP/RS. Valide com jurídico/DPO antes do board.</p>
+    </div>
+  </details>
 
   <div class="grid">
     <div>
@@ -97,6 +118,7 @@
           <option value="seguradora">Seguradora [est.]</option>
           <option value="educacao">Educação [est.]</option>
         </select>
+        <p class="hint" id="o_setor"></p>
 
         <label>Dados armazenados</label>
         <div class="checks">
@@ -112,6 +134,14 @@
           <option value="intermediario" selected>Intermediário</option>
           <option value="avancado">Avançado</option>
         </select>
+
+        <label for="cenario">Cenário de vazamento · fração de afetados</label>
+        <select id="cenario">
+          <option value="pequeno">Pequeno (1%)</option>
+          <option value="esperado" selected>Esperado (5%)</option>
+          <option value="grande">Grande (15%)</option>
+        </select>
+        <p class="hint" id="o_afetados"></p>
 
         <label for="faturamento">Faturamento anual no Brasil (R$) · multa ANPD</label>
         <input type="number" id="faturamento" min="0" step="1000000" value="50000000" />
@@ -131,7 +161,7 @@
 
       <div class="card prob">
         <h3>Premissas · probabilidades <span class="reset" id="reset_prob">↺ padrão</span></h3>
-        <p class="hint">Calculadas pelo perfil. Edite para testar suas próprias premissas.</p>
+        <p class="hint">Calculadas pelo perfil. <b>P(vazamento) é juízo editorial, não calibrada com dado</b> (a indenização é). Edite todas para testar suas premissas.</p>
         <label>P(vazamento por ano) <input class="pct" type="number" id="p_breach" min="0" max="100" step="0.5" /></label>
         <label>Litigância (% dos afetados) <input class="pct" type="number" id="p_sue" min="0" max="100" step="0.05" /></label>
         <label>P(multa ANPD, se vazar) <input class="pct" type="number" id="p_multa" min="0" max="100" step="0.5" /></label>
@@ -219,6 +249,7 @@
       <b>Fontes.</b> DataJud/CNJ (4.878 processos de proteção de dados, 34 tribunais, 2020–2025). Jurisprudência: JurisFonte + TJES (1.968 acórdãos, 675 com valor). Custo total de incidente: IBM Cost of a Data Breach 2025 (Brasil R$ 7,19M; Saúde 11,43M; Finanças 8,92M). Multa ANPD: Art. 52 da LGPD. Modelo determinístico; probabilidades de multa calibradas à fiscalização real (baixa) e ajustáveis. Coleta: jun/2026.
     </p>
     <p>Construído por <a href="https://pereirasaraiva.com">Janilo Saraiva</a>, que presta consultoria nesta área. Demonstração de método e ponto de partida; valide os inputs com seu jurídico/DPO antes de levar ao board. Não substitui análise jurídica.</p>
+    <p class="src"><b>Modelo datado.</b> Modelo v2.1, dado de jun/2026. O alvo legal está em movimento (STJ e ANPD, 2023–2025); recalibrar periodicamente.</p>
   </footer>
 </div>
 
@@ -229,6 +260,7 @@ const brl = (x) => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL
 const brl2 = (x) => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2}).format(x||0);
 const num = (x) => new Intl.NumberFormat('pt-BR').format(x||0);
 const fmtPct = (x) => parseFloat((x*100).toFixed(2)).toString();
+const REGIME_LBL = { presumido:'dano presumido', misto:'dano misto', comprovar:'dano a comprovar' };
 const $ = (id) => document.getElementById(id);
 let DATA = null;
 const overridden = { p_breach:false, p_sue:false, p_multa:false };
@@ -243,6 +275,7 @@ function readParams(){
     dados_cartao: $('d_cartao').checked,
     dados_saude: $('d_saude').checked,
     maturidade_seguranca: $('maturidade').value,
+    cenario_vazamento: $('cenario').value,
     faturamento_brasil: +$('faturamento').value || 0,
     investimento_incremental: +$('investimento').value || 0,
     horizonte_anos: +$('horizonte').value || 1,
@@ -268,10 +301,17 @@ function render(){
   $('o_total').textContent = brl(e.total);
   $('o_total_sub').textContent = `por ano · com P(multa) ${fmtPct(res.prob.p_multa)}%`;
   $('o_litigio').textContent = brl(e.litigio);
-  $('o_proc').textContent = `${e.processos} ações esperadas se vazar`;
+  $('o_proc').textContent = `${e.processos.toLocaleString('pt-BR')} ações · proc. ${(res.procedencia.taxa*100).toFixed(0)}% (${REGIME_LBL[res.procedencia.regime]||res.procedencia.regime})`;
   $('o_anpd').textContent = brl(e.anpd);
   $('o_anpd_sub').textContent = p.faturamento_brasil>0 ? 'prob. baixa × magnitude' : 'informe faturamento';
   $('o_peruser').textContent = brl2(p.base_usuarios>0 ? e.total/p.base_usuarios : 0);
+
+  // cenário de afetados + base setorial
+  $('o_afetados').textContent = `≈ ${num(e.afetados)} usuários afetados no cenário`;
+  const si = res.setor_info;
+  $('o_setor').textContent = si.tipo==='nacional' ? 'Base nacional, sem ajuste setorial.'
+    : si.tipo==='real' ? `Dano ${si.mult}× · base setorial: n=${si.n} acórdãos.`
+    : `Dano ${si.mult}× neutro · sem base setorial (estimativa).`;
 
   // pior caso
   $('o_tail').textContent = brl(t.total);
