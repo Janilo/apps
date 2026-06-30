@@ -9,8 +9,12 @@ const BREACH_SCENARIOS = { pequeno: 0.01, esperado: 0.05, grande: 0.15 };
 
 const SETOR_DANO_MULT = { geral: 1, financeiro: 1.26, saude: 1, varejo: 1.55, tecnologia: 1, telecom: 1, seguradora: 1, educacao: 1 };
 
-const P_SUE_BREACH_BASE = { pessoal: 0.0002, financeiro: 0.0010, cartao: 0.0006, saude: 0.0016 };
-const PORTE_P_SUE_BREACH_MULT = { mei: 0.1, pequena: 0.5, media: 2.0, grande: 8.0 };
+// pSue agora é a FRAÇÃO dos afetados que efetivamente processa (taxa per-capita),
+// NÃO uma probabilidade aplicada por cima de uma contagem de ações (isso double-contava
+// e zerava o litígio). Dos milhões de pessoas expostas em vazamentos no Brasil, pouquíssimas
+// litigam (~813 ações/ano no país inteiro). Dado sensível eleva a propensão. Juízo editável.
+const P_SUE_PERCAPITA = { pessoal: 0.0003, financeiro: 0.0006, cartao: 0.0006, saude: 0.0010 };
+const P_SUE_CAP = 0.05; // teto: no máximo 5% dos afetados processam
 const PORTE_VALOR_MULTIPLIERS = { mei: 0.6, pequena: 0.8, media: 1.0, grande: 1.35 };
 
 // ANPD (Art. 52 LGPD): teto 2% do faturamento Brasil, limite R$ 50M/infração.
@@ -63,11 +67,10 @@ function pSueBase(q) {
   if (q.dados_cartao) tipos.push("cartao");
   if (q.dados_pessoais) tipos.push("pessoal");
   if (!tipos.length) return 0;
-  const base = Math.max(...tipos.map((t) => P_SUE_BREACH_BASE[t]));
-  const usersFactor = Math.min(q.base_usuarios / 50000, 3.0);
-  let p = base * get(PORTE_P_SUE_BREACH_MULT, q.porte_empresa, 1.0) * usersFactor;
-  if (q.reincidencia) p = Math.min(p * 2.0, 0.6);
-  return Math.min(p, 0.30);
+  // porte e base de usuários entram via afetados e valor da causa, não aqui.
+  let p = Math.max(...tipos.map((t) => P_SUE_PERCAPITA[t]));
+  if (q.reincidencia) p *= 1.5;
+  return Math.min(p, P_SUE_CAP);
 }
 
 function pMultaBase(q) {
@@ -83,11 +86,6 @@ function investmentEffectiveness(investimento, baseUsuarios) {
   if (perUser <= 3) return { rp: 0.35, ri: 0.25 };
   if (perUser <= 10) return { rp: 0.55, ri: 0.40 };
   return { rp: 0.75, ri: 0.60 };
-}
-
-function expectedLawsuits(afetados) {
-  if (afetados <= 0) return 0;
-  return Math.min(1 + afetados / 2000, afetados * 0.05);
 }
 
 function gravidadeMax(q) {
@@ -112,7 +110,8 @@ function componentes(q, benchmark, pBreach, pSue, pMulta, impactoReduction) {
 
   let affected = Math.min(BREACH_SCENARIOS.esperado * dataAttractiveness(q), 0.5) * (1 - impactoReduction);
   const usuariosAfetados = Math.floor(q.base_usuarios * affected);
-  const processos = pSue * expectedLawsuits(usuariosAfetados);
+  // contagem de ações = fração que processa × afetados (uma propensão só, sem double-count)
+  const processos = pSue * usuariosAfetados;
   const custoProcesso = valor * taxa;
 
   // litígio
@@ -125,15 +124,15 @@ function componentes(q, benchmark, pBreach, pSue, pMulta, impactoReduction) {
     : 0;
   const anpdEsperado = pBreach * pMulta * anpdSeMultar;
 
-  // IBM total de incidente (referência)
+  // IBM total de incidente: FAIXA de referência de mercado, não previsão.
+  // Não se multiplica pela P(vazamento) deste modelo — seria emprestar precisão falsa.
   const ibmPorIncidente = get(IBM_CODB, q.setor, IBM_CODB._default);
-  const ibmEsperado = pBreach * ibmPorIncidente;
 
   return {
     usuariosAfetados, processos,
     litigioSeVazar, litigioEsperado,
     anpdSeMultar, anpdEsperado,
-    ibmPorIncidente, ibmEsperado,
+    ibmPorIncidente,
   };
 }
 
@@ -201,7 +200,6 @@ export function analisar(params, data) {
     },
     ibm: {
       por_incidente: sem.ibmPorIncidente,
-      esperado: r(sem.ibmEsperado),
     },
     investimento,
     sensibilidade,

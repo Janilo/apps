@@ -133,7 +133,7 @@
         <h3>Premissas · probabilidades <span class="reset" id="reset_prob">↺ padrão</span></h3>
         <p class="hint">Calculadas pelo perfil. Edite para testar suas próprias premissas.</p>
         <label>P(vazamento por ano) <input class="pct" type="number" id="p_breach" min="0" max="100" step="0.5" /></label>
-        <label>P(processo, se vazar) <input class="pct" type="number" id="p_sue" min="0" max="100" step="0.1" /></label>
+        <label>Litigância (% dos afetados) <input class="pct" type="number" id="p_sue" min="0" max="100" step="0.05" /></label>
         <label>P(multa ANPD, se vazar) <input class="pct" type="number" id="p_multa" min="0" max="100" step="0.5" /></label>
         <p class="hint">A ANPD aplicou pouquíssimas multas até 2025. O default é baixo de propósito; suba se acha que a fiscalização vai apertar.</p>
       </div>
@@ -165,10 +165,10 @@
       <div class="card">
         <h3>Custo total de incidente · referência IBM</h3>
         <div class="stat-row">
-          <div class="stat"><div class="k">Por incidente (média de mercado)</div><div class="v" id="o_ibm">—</div><div class="sub" id="o_ibm_sub"></div></div>
-          <div class="stat"><div class="k">Esperado por ano</div><div class="v" id="o_ibm_esp">—</div><div class="sub">× P de vazamento</div></div>
+          <div class="stat"><div class="k">Por incidente · este setor</div><div class="v" id="o_ibm">—</div><div class="sub" id="o_ibm_sub"></div></div>
+          <div class="stat"><div class="k">Faixa de mercado</div><div class="v">R$ 7,2–11,4 mi</div><div class="sub">por setor (IBM 2025)</div></div>
         </div>
-        <p class="note">IBM Cost of a Data Breach 2025. Métrica <b>diferente</b> das de cima: é o custo total do incidente (resposta, perda de negócio, remediação), não indenização judicial. Serve de referência, <b>não se soma</b>.</p>
+        <p class="note">IBM Cost of a Data Breach 2025. Métrica <b>diferente</b> das de cima: custo total do incidente (resposta, perda de negócio, remediação), não indenização judicial. É <b>referência de mercado, não previsão</b>, e <b>não se soma</b> às camadas acima.</p>
       </div>
 
       <div class="exclude card">
@@ -206,7 +206,7 @@
     <div class="stat"><div class="k">Processos/ano</div><div class="v" id="c_ano">—</div><div class="sub">DataJud, 4.878 em 2020–2025</div></div>
     <div class="stat"><div class="k">Indenização mediana</div><div class="v" id="c_mediana">—</div><div class="sub" id="c_media"></div></div>
     <div class="stat"><div class="k">Procedência</div><div class="v" id="c_proc">—</div><div class="sub" id="c_comvalor"></div></div>
-    <div class="stat"><div class="k">Calibração</div><div class="v" id="c_erro">—</div><div class="sub">previsto vs. DataJud</div></div>
+    <div class="stat"><div class="k">Aderência nacional</div><div class="v" id="c_erro">—</div><div class="sub">ações/ano previstas vs. DataJud · não valida o R$ por empresa</div></div>
   </div>
   <div class="card">
     <h3>Onde estão os processos (acórdãos de LGPD por estado)</h3>
@@ -218,7 +218,7 @@
     <p class="src">
       <b>Fontes.</b> DataJud/CNJ (4.878 processos de proteção de dados, 34 tribunais, 2020–2025). Jurisprudência: JurisFonte + TJES (1.968 acórdãos, 675 com valor). Custo total de incidente: IBM Cost of a Data Breach 2025 (Brasil R$ 7,19M; Saúde 11,43M; Finanças 8,92M). Multa ANPD: Art. 52 da LGPD. Modelo determinístico; probabilidades de multa calibradas à fiscalização real (baixa) e ajustáveis. Coleta: jun/2026.
     </p>
-    <p>Construído por <a href="https://pereirasaraiva.com">Janilo Saraiva</a>. Demonstração de método, não substitui análise jurídica.</p>
+    <p>Construído por <a href="https://pereirasaraiva.com">Janilo Saraiva</a>, que presta consultoria nesta área. Demonstração de método e ponto de partida; valide os inputs com seu jurídico/DPO antes de levar ao board. Não substitui análise jurídica.</p>
   </footer>
 </div>
 
@@ -281,7 +281,6 @@ function render(){
   // ibm
   $('o_ibm').textContent = brl(ibm.por_incidente);
   $('o_ibm_sub').textContent = `setor ${p.setor}`;
-  $('o_ibm_esp').textContent = brl(ibm.esperado);
 
   // roi
   const roiCard = $('roiCard');
