@@ -64,11 +64,27 @@
   .method summary { cursor:pointer; font-weight:600; color:var(--marine); padding:.75rem 0; list-style-position:inside; }
   .method p { margin:.55rem 0; } .method ul { padding-left:1.1rem; margin:.4rem 0; } .method li { margin:.25rem 0; }
   .method b { color:var(--marine); }
+  .actions { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin:0 0 1.1rem; }
+  .actions button { font-family:inherit; font-size:.82rem; font-weight:500; color:var(--marine); background:var(--white); border:1px solid var(--stone); border-radius:5px; padding:.5rem .85rem; cursor:pointer; }
+  .actions button:hover { border-color:var(--marine); }
+  .actions .msg { font-size:.76rem; color:var(--green); font-weight:500; }
+  .printhead { display:none; }
+  @media print {
+    .actions, .reset, header.site .dot, #chartSens, #chart, #chartUf { display:none !important; }
+    body { background:#fff; color:#000; }
+    .wrap { max-width:none; padding:.4rem 0 0; }
+    .printhead { display:block; font-family:'Fraunces',serif; font-weight:600; color:var(--marine); font-size:1.05rem; margin:.2rem 0 1rem; }
+    .grid { grid-template-columns:1fr; gap:.6rem; }
+    .card, .method, .exclude, .disclaimer { box-shadow:none; break-inside:avoid; }
+    details.method { border:1px solid var(--stone); } details.method > div { display:block !important; }
+    a[href]:after { content:""; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="site"><span class="mark">RiskJud</span><span class="dot">●</span></header>
+  <div class="printhead">Exposição de risco LGPD · cenário gerado em <span id="printdate"></span></div>
   <p class="tagline">Exposição <b>judicial e administrativa</b> de um vazamento de dados no Brasil, sob premissas que você controla. Não é o custo total de um incidente.</p>
 
   <div class="disclaimer">
@@ -91,6 +107,12 @@
       <p><b>Limites.</b> Modelo genérico: não vê seu inventário real, regulação setorial (Bacen/ANS/SUSEP) nem contratos B2B. Acórdãos concentrados em SP/RS. Valide com jurídico/DPO antes do board.</p>
     </div>
   </details>
+
+  <div class="actions">
+    <button id="btnLink" type="button">Copiar link do cenário</button>
+    <button id="btnPdf" type="button">Salvar PDF</button>
+    <span class="msg" id="linkMsg"></span>
+  </div>
 
   <div class="grid">
     <div>
@@ -326,8 +348,8 @@ function render(){
   const roiCard = $('roiCard');
   if (res.investimento){
     const r = res.investimento;
-    $('o_roi').textContent = `${r.roi}%`;
-    $('o_payback').textContent = r.payback_anos!=null ? `payback ${r.payback_anos} ano(s)` : 'sem payback';
+    $('o_roi').textContent = `${r.roi.toLocaleString('pt-BR')}%`;
+    $('o_payback').textContent = r.payback_anos!=null ? `payback ${r.payback_anos.toLocaleString('pt-BR')} ano(s)` : 'sem payback';
     $('o_economia').textContent = brl(r.economia);
     $('o_horizonte').textContent = `em ${p.horizonte_anos} ano(s)`;
     $('o_rec').textContent = r.recomendacao;
@@ -380,6 +402,37 @@ function renderContext(){
   }, {displayModeBar:false, responsive:true});
 }
 
+// --- permalink: serializa o cenário na URL e recupera no boot (#14) ---
+function collectState(){
+  const s = {
+    base:$('base').value, porte:$('porte').value, setor:$('setor').value,
+    dp:$('d_pessoais').checked?1:0, df:$('d_financeiros').checked?1:0,
+    dc:$('d_cartao').checked?1:0, ds:$('d_saude').checked?1:0,
+    mat:$('maturidade').value, cen:$('cenario').value,
+    fat:$('faturamento').value, inv:$('investimento').value, hor:$('horizonte').value,
+    re:$('reincidencia').checked?1:0, pv:$('provas').checked?1:0,
+  };
+  if(overridden.p_breach) s.pb=$('p_breach').value;
+  if(overridden.p_sue) s.ps=$('p_sue').value;
+  if(overridden.p_multa) s.pm=$('p_multa').value;
+  return s;
+}
+function shareUrl(){ return location.origin+location.pathname+'#'+new URLSearchParams(collectState()).toString(); }
+function applyState(){
+  if(!location.hash || location.hash.length<2) return;
+  const q=new URLSearchParams(location.hash.slice(1));
+  const setV=(id,k)=>{ const v=q.get(k); if(v!=null) $(id).value=v; };
+  const setC=(id,k)=>{ const v=q.get(k); if(v!=null) $(id).checked=v==='1'; };
+  setV('base','base'); setV('porte','porte'); setV('setor','setor');
+  setC('d_pessoais','dp'); setC('d_financeiros','df'); setC('d_cartao','dc'); setC('d_saude','ds');
+  setV('maturidade','mat'); setV('cenario','cen');
+  setV('faturamento','fat'); setV('investimento','inv'); setV('horizonte','hor');
+  setC('reincidencia','re'); setC('provas','pv');
+  if(q.get('pb')!=null){ overridden.p_breach=true; $('p_breach').value=q.get('pb'); }
+  if(q.get('ps')!=null){ overridden.p_sue=true; $('p_sue').value=q.get('ps'); }
+  if(q.get('pm')!=null){ overridden.p_multa=true; $('p_multa').value=q.get('pm'); }
+}
+
 async function boot(){
   DATA = await fetch('./data.json').then(r=>r.json());
   document.querySelectorAll('#inputs input, #inputs select').forEach(el=>{
@@ -391,8 +444,18 @@ async function boot(){
   $('reset_prob').addEventListener('click', (ev)=>{
     ev.preventDefault();
     overridden.p_breach=overridden.p_sue=overridden.p_multa=false;
+    history.replaceState(null,'',location.pathname);
     render();
   });
+  $('btnLink').addEventListener('click', async ()=>{
+    const url=shareUrl(); history.replaceState(null,'',url);
+    try{ await navigator.clipboard.writeText(url); $('linkMsg').textContent='Link copiado'; }
+    catch{ $('linkMsg').textContent='Copie da barra de endereço'; }
+    setTimeout(()=>{ $('linkMsg').textContent=''; }, 3000);
+  });
+  $('btnPdf').addEventListener('click', ()=> window.print());
+  $('printdate').textContent = new Date().toLocaleDateString('pt-BR');
+  applyState();
   render();
   renderContext();
 }
