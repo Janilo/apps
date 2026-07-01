@@ -24,3 +24,13 @@ Estático, sem build. O Cloudflare Pages serve o repositório direto. Para publi
 ```bash
 npx wrangler pages deploy . --project-name=riskjud
 ```
+
+## Testes
+
+O modelo do RiskJud (`riskjud/model.mjs`) é matemática pura e determinística, calibrada contra jurisprudência e exportada a conselho via PDF — então tem rede de teste. Sem build e sem dependências, pelo runner nativo do Node (18+):
+
+```bash
+node --test riskjud/model.test.mjs
+```
+
+Cobre: determinismo, teto do Art. 52 (R$ 50M), `faturamento = 0 ⇒ multa = 0`, monotonicidade (mais maturidade ↓ risco de vazamento; mais usuários ↑ litígio), efeito do investimento na exposição, e a âncora de calibração (`taxa_procedencia` sai do `data.json`, não do código).
